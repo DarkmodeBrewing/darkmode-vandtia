@@ -5,11 +5,13 @@ import './App.css';
 
 type AckResponse<T> = { ok: true; data: T } | { ok: false; error: string };
 
-type SessionState = {
+type PlayerSession = {
   roomCode: string;
   playerId: string;
   sessionId: string;
-} | null;
+};
+
+type SessionState = PlayerSession | null;
 
 const STORAGE_KEY = 'darkmode-vandtia-session';
 const serverUrl = import.meta.env.VITE_SERVER_URL ?? 'http://localhost:3001';
@@ -38,7 +40,7 @@ function saveSession(session: SessionState): void {
 }
 
 function App() {
-  const [socket, setSocket] = useState<Socket | null>(null);
+  const socket = useMemo<Socket>(() => io(serverUrl, { transports: ['websocket'] }), []);
   const [room, setRoom] = useState<RoomView | null>(null);
   const [session, setSession] = useState<SessionState>(() => readStoredSession());
   const [name, setName] = useState('');
@@ -47,59 +49,50 @@ function App() {
   const [connected, setConnected] = useState(false);
 
   useEffect(() => {
-    const nextSocket = io(serverUrl, {
-      transports: ['websocket']
-    });
-
-    nextSocket.on('connect', () => {
+    socket.on('connect', () => {
       setConnected(true);
     });
 
-    nextSocket.on('disconnect', () => {
+    socket.on('disconnect', () => {
       setConnected(false);
     });
 
-    nextSocket.on('room:update', (nextRoom: RoomView) => {
+    socket.on('room:update', (nextRoom: RoomView) => {
       setRoom(nextRoom);
     });
 
-    setSocket(nextSocket);
-
     return () => {
-      nextSocket.close();
+      socket.removeAllListeners();
+      socket.close();
     };
-  }, []);
+  }, [socket]);
 
   useEffect(() => {
     saveSession(session);
   }, [session]);
 
   useEffect(() => {
-    if (!socket || !session) {
+    if (!session) {
       return;
     }
 
-    socket.emit('room:sync', session, (response: AckResponse<SessionState>) => {
+    socket.emit('room:sync', session, (response: AckResponse<PlayerSession>) => {
       if (!response.ok) {
         setSession(null);
         setRoom(null);
         setError(response.error);
       }
     });
-  }, [socket, session?.roomCode, session?.sessionId]);
+  }, [session, socket]);
 
   const me = useMemo(() => room?.players.find((player) => player.isMe) ?? null, [room]);
   const actionState = room?.game?.actionState ?? null;
   const isMyTurn = room?.game?.currentTurnPlayerId === room?.mePlayerId;
 
-  async function emitAck<TPayload extends object, TResult extends SessionState | { roomCode: string; playerId: string }>(
+  async function emitAck<TPayload extends object, TResult extends PlayerSession | { roomCode: string; playerId: string }>(
     event: string,
     payload: TPayload
   ): Promise<AckResponse<TResult>> {
-    if (!socket) {
-      return { ok: false, error: 'The realtime connection is not ready yet.' };
-    }
-
     return new Promise((resolve) => {
       socket.emit(event, payload, (response: AckResponse<TResult>) => resolve(response));
     });
@@ -107,7 +100,7 @@ function App() {
 
   async function createRoom() {
     setError(null);
-    const response = await emitAck<{ playerName: string; sessionId?: string }, SessionState>('room:create', {
+    const response = await emitAck<{ playerName: string; sessionId?: string }, PlayerSession>('room:create', {
       playerName: name,
       sessionId: session?.sessionId
     });
@@ -123,7 +116,7 @@ function App() {
 
   async function joinRoom() {
     setError(null);
-    const response = await emitAck<{ playerName: string; roomCode: string; sessionId?: string }, SessionState>('room:join', {
+    const response = await emitAck<{ playerName: string; roomCode: string; sessionId?: string }, PlayerSession>('room:join', {
       playerName: name,
       roomCode,
       sessionId: session?.sessionId

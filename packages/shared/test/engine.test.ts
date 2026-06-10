@@ -39,7 +39,7 @@ describe('shared game engine', () => {
     const deck = deckFromSpecs([
       [9, suits[0]], [8, suits[1]], [9, suits[2]], [8, suits[3]], [9, suits[1]], [8, suits[2]],
       [11, suits[0]], [7, suits[1]], [12, suits[2]], [6, suits[3]], [13, suits[1]], [5, suits[2]],
-      [4, suits[0]], [3, suits[1]], [14, suits[2]], [13, suits[3]]
+      [4, suits[0]], [3, suits[1]], [14, suits[2]], [13, suits[3]], [10, suits[0]], [12, suits[0]]
     ]);
 
     const started = startGame(room, { deck });
@@ -53,15 +53,15 @@ describe('shared game engine', () => {
       deck: deckFromSpecs([
         [9, suits[0]], [9, suits[1]], [8, suits[0]], [8, suits[1]], [7, suits[0]], [7, suits[1]],
         [10, suits[0]], [10, suits[1]], [11, suits[0]], [11, suits[1]], [12, suits[0]], [12, suits[1]],
-        [13, suits[0]], [3, suits[0]], [14, suits[0]], [4, suits[0]], [5, suits[0]], [6, suits[0]]
+        [2, suits[0]], [3, suits[0]], [13, suits[0]], [4, suits[0]], [14, suits[0]], [5, suits[0]]
       ])
     });
 
-    room = playCard(room, 'player-2', room.players[1]!.hand[0]!.id);
     room = playCard(room, 'player-1', room.players[0]!.hand[0]!.id);
 
     expect(getTopConstraintRank(room.game?.activePile ?? [])).toBeNull();
     expect(canPlayRank(3, getTopConstraintRank(room.game?.activePile ?? []))).toBe(true);
+    expect(getPlayerActionState(room, 'player-2')?.legalCardIds).toContain(room.players[1]!.hand[0]!.id);
   });
 
   it('burns the pile when a ten is played', () => {
@@ -70,7 +70,7 @@ describe('shared game engine', () => {
       deck: deckFromSpecs([
         [9, suits[0]], [9, suits[1]], [8, suits[0]], [8, suits[1]], [7, suits[0]], [7, suits[1]],
         [11, suits[0]], [11, suits[1]], [12, suits[0]], [12, suits[1]], [13, suits[0]], [13, suits[1]],
-        [10, suits[0]], [3, suits[0]], [14, suits[0]], [4, suits[0]], [5, suits[0]], [6, suits[0]]
+        [10, suits[0]], [3, suits[0]], [11, suits[2]], [4, suits[0]], [12, suits[2]], [5, suits[0]]
       ])
     });
 
