@@ -18,7 +18,7 @@ This repository is a small multiplayer Vändtia workspace with one shared rules 
 
 ### Server package
 
-`packages/server` hosts the authoritative room state in memory and exposes it through Socket.IO events:
+`packages/server` hosts the authoritative room state, persists it to disk, and exposes it through Socket.IO events:
 
 - `room:create`
 - `room:join`
@@ -29,9 +29,9 @@ This repository is a small multiplayer Vändtia workspace with one shared rules 
 - `game:draw-chance`
 - `game:pickup-pile`
 
-The server logic lives in `packages/server/src/app.ts` as a `createApp` factory that returns the Express server, Socket.IO instance, and the in-memory rooms map. `index.ts` only reads environment variables and calls `createApp`. This split lets tests spin up isolated server instances without touching the real entry point.
+The server logic lives in `packages/server/src/app.ts` as a `createApp` factory that returns the Express server, Socket.IO instance, and the room map loaded from persistent storage. `index.ts` only reads environment variables and calls `createApp`. This split lets tests spin up isolated server instances without touching the real entry point.
 
-The server also tracks player/socket connections and pushes room updates to each player with hidden information masked where needed.
+The server stores room snapshots in `packages/server/data/rooms.json` by default, resets persisted players to disconnected on startup, tracks player/socket connections, and pushes room updates to each player with hidden information masked where needed.
 
 ### Client package
 
@@ -82,6 +82,7 @@ Current automated tests cover:
 - `game:draw-chance` — draws a chance card when blocked in hand
 - `game:pickup-pile` — picks up the pile when no legal play remains
 - disconnect handling — marks the player as disconnected and emits the updated room
+- persisted room reload — restores saved rooms after restart and allows saved sessions to resync
 
 **Client tests** (`packages/client/test`):
 
@@ -90,5 +91,4 @@ Current automated tests cover:
 
 ## Known gaps
 
-- Room state is in memory only; there is no server-side persistence layer
 - Client interaction coverage does not yet exercise the updated mobile-first room and gameplay layout

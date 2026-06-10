@@ -15,6 +15,7 @@ import {
   toRoomView,
   type RoomState
 } from '@darkmode-vandtia/shared';
+import { createRoomStore } from './storage.js';
 
 type Ack<T> = (response: { ok: true; data: T } | { ok: false; error: string }) => void;
 
@@ -37,8 +38,13 @@ export interface AppInstance {
   rooms: Map<string, RoomState>;
 }
 
-export function createApp(clientOrigin: string): AppInstance {
-  const rooms = new Map<string, RoomState>();
+export interface CreateAppOptions {
+  roomStoragePath?: string;
+}
+
+export function createApp(clientOrigin: string, options: CreateAppOptions = {}): AppInstance {
+  const roomStore = createRoomStore(options.roomStoragePath);
+  const rooms = roomStore.loadRooms();
   const playerSockets = new Map<string, string>();
   const socketPlayers = new Map<string, { roomCode: string; playerId: string }>();
 
@@ -88,10 +94,16 @@ export function createApp(clientOrigin: string): AppInstance {
 
   function setRoom(room: RoomState): RoomState {
     rooms.set(room.roomCode, room);
+    roomStore.saveRooms(rooms);
     return room;
   }
 
   function setPlayerSocket(roomCode: string, playerId: string, socketId: string): void {
+    const previousSocketId = playerSockets.get(playerId);
+    if (previousSocketId && previousSocketId !== socketId) {
+      socketPlayers.delete(previousSocketId);
+    }
+
     playerSockets.set(playerId, socketId);
     socketPlayers.set(socketId, { roomCode, playerId });
   }
@@ -277,6 +289,11 @@ export function createApp(clientOrigin: string): AppInstance {
       }
 
       socketPlayers.delete(socket.id);
+      const currentSocketId = playerSockets.get(details.playerId);
+      if (currentSocketId && currentSocketId !== socket.id) {
+        return;
+      }
+
       playerSockets.delete(details.playerId);
 
       const room = rooms.get(details.roomCode);
