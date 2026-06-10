@@ -40,5 +40,5 @@ The server defaults to `http://localhost:3001` and the client defaults to `http:
 
 ## Documentation
 
-- `/home/runner/work/darkmode-vandtia/darkmode-vandtia/DarkmodeBrewing/darkmode-vandtia/docs/plan.md`
-- `/home/runner/work/darkmode-vandtia/darkmode-vandtia/DarkmodeBrewing/darkmode-vandtia/docs/current-state.md`
+- `docs/plan.md`
+- `docs/current-state.md`
