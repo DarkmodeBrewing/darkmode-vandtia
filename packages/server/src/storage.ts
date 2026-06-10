@@ -68,10 +68,11 @@ export function createRoomStore(storagePath: string = DEFAULT_ROOM_STORAGE_PATH)
       );
     },
     saveRooms(rooms) {
-      for (const [roomCode, room] of rooms) {
-        if (!shouldPersistRoom(room)) {
-          rooms.delete(roomCode);
-        }
+      const roomCodesToDelete = [...rooms.entries()]
+        .filter(([, room]) => !shouldPersistRoom(room))
+        .map(([roomCode]) => roomCode);
+      for (const roomCode of roomCodesToDelete) {
+        rooms.delete(roomCode);
       }
 
       mkdirSync(dirname(storagePath), { recursive: true });
