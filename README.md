@@ -13,12 +13,12 @@ A multiplayer Vändtia prototype built as a TypeScript workspace with a shared r
 ## Current feature set
 
 - Create or join a room for up to four players
-- Restore a saved player session into an existing room
+- Restore a saved player session into an existing room and clear stale local session state when needed
 - Track seat assignments, ready state, and connection status
 - Start a game once all joined players are ready
 - Play hand, face-up, and face-down cards using shared Vändtia rules
 - Draw a chance card or pick up the pile when blocked
-- Reveal the current turn, pile state, and winner in the client
+- Reveal the current turn, pile state, winner, and context-aware action guidance in the client
 
 ## Getting started
 

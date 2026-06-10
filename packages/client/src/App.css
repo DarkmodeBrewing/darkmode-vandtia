@@ -54,7 +54,8 @@ input {
 .panel--header,
 .room-panel,
 .action-row,
-.game-meta-grid {
+.game-meta-grid,
+.status-summary {
   display: flex;
   gap: 1rem;
   align-items: center;
@@ -65,6 +66,34 @@ input {
 .panel--error {
   color: #fecaca;
   border-color: #b91c1c;
+}
+
+.panel--status-info {
+  border-color: #2563eb;
+}
+
+.panel--status-warning {
+  border-color: #d97706;
+}
+
+.panel--status-success {
+  border-color: #15803d;
+}
+
+.status-summary__title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 0.35rem;
+}
+
+.status-list {
+  margin: 1rem 0 0;
+  padding-left: 1.25rem;
+  color: #cbd5e1;
+}
+
+.status-list li + li {
+  margin-top: 0.4rem;
 }
 
 .landing-grid,
