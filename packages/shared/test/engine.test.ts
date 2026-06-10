@@ -11,6 +11,7 @@ import {
   pickupPile,
   playCard,
   startGame,
+  toRoomView,
   type Card,
   type CardRank,
   type Suit
@@ -186,6 +187,138 @@ describe('shared game engine', () => {
     const afterFaceUp = playCard(started, 'player-1', player.table.faceUp[0]!.id);
     expect(afterFaceUp.status).toBe('in_progress');
     expect(getPlayerActionState(afterFaceUp, 'player-1')?.availableSource).toBe('faceDown');
+  });
+
+
+  it('lets players choose any face-down card without seeing its rank', () => {
+    const room = createRoomState('ROOM05');
+    const first = {
+      ...createEmptyPlayerState('player-1', 'session-1', 'Ada', 1),
+      hand: [],
+      table: {
+        faceUp: [],
+        faceDown: deckFromSpecs([[8, suits[0]], [3, suits[1]]])
+      }
+    };
+    const second = {
+      ...createEmptyPlayerState('player-2', 'session-2', 'Bea', 2),
+      hand: deckFromSpecs([[14, suits[0]]]),
+      table: { faceDown: [], faceUp: [] }
+    };
+    const started = {
+      ...room,
+      status: 'in_progress' as const,
+      locked: true,
+      players: [first, second],
+      game: {
+        drawPile: [],
+        activePile: deckFromSpecs([[9, suits[2]]]),
+        discardedPile: [],
+        currentTurnPlayerId: 'player-1',
+        winnerPlayerId: null,
+        turn: {
+          playerId: 'player-1',
+          drewChanceCard: false,
+          availableSource: 'faceDown' as const
+        },
+        startedAt: new Date().toISOString()
+      }
+    };
+
+    const actionState = getPlayerActionState(started, 'player-1');
+    expect(actionState?.availableSource).toBe('faceDown');
+    expect(actionState?.legalCardIds).toEqual(first.table.faceDown.map((card) => card.id));
+
+    const playerView = toRoomView(started, 'player-1').players[0]!;
+    expect(playerView.faceDown.map((card) => card.id)).toEqual(first.table.faceDown.map((card) => card.id));
+    expect(playerView.faceDown.map((card) => card.label)).toEqual(['Hidden', 'Hidden']);
+  });
+
+  it('plays a legal face-down reveal normally', () => {
+    const room = createRoomState('ROOM06');
+    const first = {
+      ...createEmptyPlayerState('player-1', 'session-1', 'Ada', 1),
+      hand: [],
+      table: {
+        faceUp: [],
+        faceDown: deckFromSpecs([[8, suits[0]], [11, suits[1]]])
+      }
+    };
+    const second = {
+      ...createEmptyPlayerState('player-2', 'session-2', 'Bea', 2),
+      hand: deckFromSpecs([[14, suits[0]]]),
+      table: { faceDown: [], faceUp: [] }
+    };
+    const started = {
+      ...room,
+      status: 'in_progress' as const,
+      locked: true,
+      players: [first, second],
+      game: {
+        drawPile: [],
+        activePile: deckFromSpecs([[7, suits[2]]]),
+        discardedPile: [],
+        currentTurnPlayerId: 'player-1',
+        winnerPlayerId: null,
+        turn: {
+          playerId: 'player-1',
+          drewChanceCard: false,
+          availableSource: 'faceDown' as const
+        },
+        startedAt: new Date().toISOString()
+      }
+    };
+
+    const afterReveal = playCard(started, 'player-1', first.table.faceDown[0]!.id);
+
+    expect(afterReveal.players[0]!.table.faceDown.map((card) => card.rank)).toEqual([11]);
+    expect(afterReveal.game?.activePile.map((card) => card.rank)).toEqual([7, 8]);
+    expect(afterReveal.game?.currentTurnPlayerId).toBe('player-2');
+    expect(afterReveal.status).toBe('in_progress');
+  });
+
+  it('reveals an illegal face-down card, picks up the pile, and ends the turn', () => {
+    const room = createRoomState('ROOM07');
+    const first = {
+      ...createEmptyPlayerState('player-1', 'session-1', 'Ada', 1),
+      hand: [],
+      table: {
+        faceUp: [],
+        faceDown: deckFromSpecs([[8, suits[0]]])
+      }
+    };
+    const second = {
+      ...createEmptyPlayerState('player-2', 'session-2', 'Bea', 2),
+      hand: deckFromSpecs([[14, suits[0]]]),
+      table: { faceDown: [], faceUp: [] }
+    };
+    const started = {
+      ...room,
+      status: 'in_progress' as const,
+      locked: true,
+      players: [first, second],
+      game: {
+        drawPile: [],
+        activePile: deckFromSpecs([[9, suits[2]]]),
+        discardedPile: [],
+        currentTurnPlayerId: 'player-1',
+        winnerPlayerId: null,
+        turn: {
+          playerId: 'player-1',
+          drewChanceCard: false,
+          availableSource: 'faceDown' as const
+        },
+        startedAt: new Date().toISOString()
+      }
+    };
+
+    const afterPenalty = playCard(started, 'player-1', first.table.faceDown[0]!.id);
+
+    expect(afterPenalty.players[0]!.hand.map((card) => card.rank)).toEqual([8, 9]);
+    expect(afterPenalty.players[0]!.table.faceDown).toHaveLength(0);
+    expect(afterPenalty.game?.activePile).toHaveLength(0);
+    expect(afterPenalty.game?.currentTurnPlayerId).toBe('player-2');
+    expect(afterPenalty.status).toBe('in_progress');
   });
 
   it('detects a winner when a player clears all cards', () => {

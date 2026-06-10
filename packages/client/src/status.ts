@@ -165,7 +165,9 @@ export function getStatusSummary({ connected, room, sessionRestoreState, session
     return {
       tone: 'success',
       title: 'Your turn.',
-      detail: `Play from your ${describeSource(actionState.availableSource)} cards.`,
+      detail: actionState.availableSource === 'faceDown'
+        ? 'Choose one face-down table card to reveal.'
+        : `Play from your ${describeSource(actionState.availableSource)} cards.`,
       bullets: [getConstraintSummary(room)]
     };
   }

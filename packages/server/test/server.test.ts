@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { io as connectSocket, type Socket } from 'socket.io-client';
+import { createCard } from '@darkmode-vandtia/shared';
 import { createApp, type AppInstance } from '../src/app';
 
 type AckResponse<T> = { ok: true; data: T } | { ok: false; error: string };
@@ -313,6 +314,48 @@ describe('server socket events', () => {
 
       const updatedRoom = app.rooms.get(roomCode)!;
       expect(updatedRoom.game?.currentTurnPlayerId).not.toBe(currentPlayerId);
+    });
+
+    it('applies the illegal face-down reveal pickup penalty', async () => {
+      const { roomCode, playerAId, playerBId } = await startTwoPlayerGame();
+      const room = app.rooms.get(roomCode)!;
+      const currentPlayerId = room.game!.currentTurnPlayerId;
+      const currentSocket = currentPlayerId === playerAId ? socketA : socketB;
+      const otherPlayerId = currentPlayerId === playerAId ? playerBId : playerAId;
+      const currentPlayer = room.players.find((player) => player.playerId === currentPlayerId)!;
+      const otherPlayer = room.players.find((player) => player.playerId === otherPlayerId)!;
+      const hiddenCard = { ...createCard(8, 'clubs' as const), id: 'hidden-eight' };
+      const pileCard = { ...createCard(9, 'hearts' as const), id: 'pile-nine' };
+
+      currentPlayer.hand = [];
+      currentPlayer.table.faceUp = [];
+      currentPlayer.table.faceDown = [hiddenCard];
+      otherPlayer.hand = [{ ...createCard(14, 'spades' as const), id: 'other-ace' }];
+      otherPlayer.table.faceUp = [];
+      otherPlayer.table.faceDown = [];
+      room.game!.drawPile = [];
+      room.game!.activePile = [pileCard];
+      room.game!.discardedPile = [];
+      room.game!.turn = {
+        playerId: currentPlayerId,
+        drewChanceCard: false,
+        availableSource: 'faceDown'
+      };
+      app.rooms.set(roomCode, room);
+
+      const response = await emit<PlayerData>(currentSocket, 'game:play-card', {
+        roomCode,
+        playerId: currentPlayerId,
+        cardId: hiddenCard.id
+      });
+      expect(response.ok).toBe(true);
+
+      const updatedRoom = app.rooms.get(roomCode)!;
+      const updatedPlayer = updatedRoom.players.find((player) => player.playerId === currentPlayerId)!;
+      expect(updatedPlayer.hand.map((card) => card.rank)).toEqual([8, 9]);
+      expect(updatedPlayer.table.faceDown).toHaveLength(0);
+      expect(updatedRoom.game?.activePile).toHaveLength(0);
+      expect(updatedRoom.game?.currentTurnPlayerId).toBe(otherPlayerId);
     });
 
     it('returns an error when no cardId is provided', async () => {
