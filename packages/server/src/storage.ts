@@ -35,7 +35,15 @@ export function createRoomStore(storagePath: string = DEFAULT_ROOM_STORAGE_PATH)
         return new Map<string, RoomState>();
       }
 
-      const payload = JSON.parse(readFileSync(storagePath, 'utf8')) as PersistedRooms;
+      let payload: PersistedRooms;
+      try {
+        payload = JSON.parse(readFileSync(storagePath, 'utf8')) as PersistedRooms;
+      } catch (error) {
+        throw new Error(
+          `Persisted room store at ${storagePath} could not be parsed: ${error instanceof Error ? error.message : 'Unknown error.'}`
+        );
+      }
+
       if (!payload || !Array.isArray(payload.rooms)) {
         throw new Error(`Persisted room store at ${storagePath} is invalid.`);
       }
