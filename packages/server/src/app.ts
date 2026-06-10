@@ -95,15 +95,11 @@ export function createApp(clientOrigin: string, options: CreateAppOptions = {}):
   function setRoom(room: RoomState): RoomState {
     rooms.set(room.roomCode, room);
     const persistedRooms = roomStore.saveRooms(rooms);
-    for (const roomCode of [...rooms.keys()]) {
-      if (!persistedRooms.has(roomCode)) {
-        rooms.delete(roomCode);
-      }
-    }
+    rooms.clear();
     for (const [roomCode, persistedRoom] of persistedRooms.entries()) {
       rooms.set(roomCode, persistedRoom);
     }
-    return room;
+    return rooms.get(room.roomCode) ?? room;
   }
 
   function setPlayerSocket(roomCode: string, playerId: string, socketId: string): void {
