@@ -16,6 +16,7 @@ A multiplayer Vändtia prototype built as a TypeScript workspace with a shared r
 - Create or join a room for up to four players
 - Restore a saved player session into an existing room and clear stale local session state when needed
 - Persist room state on the server so rooms and saved sessions can survive a server restart
+- Apply persisted-room cleanup rules that prune finished rooms and fully disconnected lobbies while keeping in-progress rooms recoverable
 - Track seat assignments, ready state, and connection status
 - Start a game once all joined players are ready
 - Play hand, face-up, and face-down cards using shared Vändtia rules
@@ -37,6 +38,7 @@ Run from the repository root:
 
 The server defaults to `http://localhost:3001` and the client defaults to `http://localhost:5173`.
 The server persists rooms to `packages/server/data/rooms.json` by default and can override that path with `ROOM_STORAGE_PATH`.
+Persistence keeps in-progress games for recovery, keeps lobby rooms only while at least one player is connected, and removes finished rooms.
 
 ## Workspace scripts
 

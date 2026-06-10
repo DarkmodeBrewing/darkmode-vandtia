@@ -34,6 +34,7 @@ The current engine rule reference lives in `docs/rules.md`.
 The server logic lives in `packages/server/src/app.ts` as a `createApp` factory that returns the Express server, Socket.IO instance, and the room map loaded from persistent storage. `index.ts` only reads environment variables and calls `createApp`. This split lets tests spin up isolated server instances without touching the real entry point.
 
 The server stores room snapshots in `packages/server/data/rooms.json` by default, resets persisted players to disconnected on startup, tracks player/socket connections, and pushes room updates to each player with hidden information masked where needed.
+Persistence retention now keeps in-progress rooms for recovery, keeps lobby rooms only while at least one player remains connected, and prunes finished rooms plus fully disconnected lobbies.
 
 ### Client package
 
@@ -90,9 +91,9 @@ Current automated tests cover:
 **Client tests** (`packages/client/test`):
 
 - `session.test.ts` — `readStoredSession` returns null when empty, parses a stored session, and clears corrupt data; `saveSession` writes, overwrites, and removes a session from storage
-- `status.test.ts` — covers offline recovery messaging, lobby readiness guidance, forced chance-draw guidance, and winner summaries
+- `status.test.ts` — covers offline and restoring recovery messaging, lobby readiness guidance, waiting-turn summaries, source-specific turn guidance, forced chance-draw guidance, and winner summaries
 
 ## Known gaps
 
-- Client interaction coverage does not yet exercise the updated mobile-first room and gameplay layout
-- Persisted room storage does not yet define automatic cleanup or retention rules for abandoned or completed rooms
+- Client interaction coverage does not yet exercise the updated mobile-first room and gameplay layout in rendered component flows
+- Persisted room storage does not yet apply age-based cleanup for abandoned in-progress rooms
