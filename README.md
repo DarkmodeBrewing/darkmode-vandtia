@@ -1,20 +1,44 @@
 # darkmode-vandtia
 
-A multiplayer card game prototype with a TypeScript game engine, Socket.IO server, and React client.
+A multiplayer Vändtia prototype built as a TypeScript workspace with a shared rules engine, a Socket.IO server, and a React client.
 
-## Workspace layout
+## What is in the repository
 
-- `packages/shared` — shared card models, room state, rule engine, and room views
-- `packages/server` — authoritative realtime game server
-- `packages/client` — Vite + React web client
+- `packages/shared` — card models, room/game state types, gameplay rules, and player-safe room views
+- `packages/server` — authoritative multiplayer room server built with Express and Socket.IO
+- `packages/client` — Vite + React browser client for lobby and gameplay interactions
+- `docs/plan.md` — delivery summary and suggested next steps
+- `docs/current-state.md` — architecture, gameplay flow, and current implementation notes
 
-## Scripts
+## Current feature set
+
+- Create or join a room for up to four players
+- Restore a saved player session into an existing room
+- Track seat assignments, ready state, and connection status
+- Start a game once all joined players are ready
+- Play hand, face-up, and face-down cards using shared Vändtia rules
+- Draw a chance card or pick up the pile when blocked
+- Reveal the current turn, pile state, and winner in the client
+
+## Getting started
 
 Run from the repository root:
 
-- `npm install` — install all workspace dependencies
-- `npm run lint` — type-check server/shared and lint the client
-- `npm run test` — run the shared game-engine tests
+1. `npm install`
+2. `npm run dev:server`
+3. `npm run dev:client`
+
+The server defaults to `http://localhost:3001` and the client defaults to `http://localhost:5173`.
+
+## Workspace scripts
+
+- `npm run lint` — type-check shared/server and lint the client
+- `npm run test` — run the workspace test commands
 - `npm run build` — build shared, server, and client packages
-- `npm run dev:server` — start the server on port `3001`
-- `npm run dev:client` — start the client on port `5173`
+- `npm run dev:server` — start the development server
+- `npm run dev:client` — start the client
+
+## Documentation
+
+- `/home/runner/work/darkmode-vandtia/darkmode-vandtia/DarkmodeBrewing/darkmode-vandtia/docs/plan.md`
+- `/home/runner/work/darkmode-vandtia/darkmode-vandtia/DarkmodeBrewing/darkmode-vandtia/docs/current-state.md`
