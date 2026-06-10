@@ -1,0 +1,16 @@
+{
+  "name": "darkmode-vandtia",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspace @darkmode-vandtia/shared && npm run build --workspace @darkmode-vandtia/server && npm run build --workspace @darkmode-vandtia/client",
+    "lint": "npm run lint --workspace @darkmode-vandtia/shared && npm run lint --workspace @darkmode-vandtia/server && npm run lint --workspace @darkmode-vandtia/client",
+    "test": "npm run test --workspace @darkmode-vandtia/shared && npm run test --workspace @darkmode-vandtia/server && npm run test --workspace @darkmode-vandtia/client",
+    "dev:server": "npm run dev --workspace @darkmode-vandtia/server",
+    "dev:client": "npm run dev --workspace @darkmode-vandtia/client"
+  }
+}
