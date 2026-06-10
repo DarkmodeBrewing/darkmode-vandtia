@@ -216,13 +216,13 @@ function App() {
       <section className="panel panel--header">
         <div className="hero-copy">
           <h1>Vändtia Online</h1>
-          <p>Mobile-first authoritative multiplayer card rooms for up to four players.</p>
+          <p>mobile-first authoritative multiplayer card rooms for up to four players.</p>
         </div>
         <div className="hero-badges">
           <div className={`status-pill ${connected ? 'status-pill--online' : 'status-pill--offline'}`}>
             {connected ? 'Connected' : 'Offline'}
           </div>
-          <span className="info-pill">Mobile-first client</span>
+          <span className="info-pill">Touch-friendly controls</span>
         </div>
       </section>
 
