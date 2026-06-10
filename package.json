@@ -1,0 +1,21 @@
+{
+  "name": "darkmode-vandtia",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DarkmodeBrewing/darkmode-vandtia.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/DarkmodeBrewing/darkmode-vandtia/issues"
+  },
+  "homepage": "https://github.com/DarkmodeBrewing/darkmode-vandtia#readme"
+}
