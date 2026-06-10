@@ -22,7 +22,7 @@ function shouldPersistRoom(room: RoomState): boolean {
 export interface RoomStore {
   storagePath: string;
   loadRooms(): Map<string, RoomState>;
-  saveRooms(rooms: Map<string, RoomState>): void;
+  saveRooms(rooms: Map<string, RoomState>): Map<string, RoomState>;
 }
 
 export const DEFAULT_ROOM_STORAGE_PATH = fileURLToPath(new URL('../data/rooms.json', import.meta.url));
@@ -68,17 +68,15 @@ export function createRoomStore(storagePath: string = DEFAULT_ROOM_STORAGE_PATH)
       );
     },
     saveRooms(rooms) {
-      const roomCodesToDelete = [...rooms.entries()]
-        .filter(([, room]) => !shouldPersistRoom(room))
-        .map(([roomCode]) => roomCode);
-      for (const roomCode of roomCodesToDelete) {
-        rooms.delete(roomCode);
-      }
+      const retainedEntries = [...rooms.entries()].filter(([, room]) => shouldPersistRoom(room));
+      const retainedRooms = new Map(retainedEntries);
 
       mkdirSync(dirname(storagePath), { recursive: true });
       const temporaryPath = `${storagePath}.tmp`;
-      writeFileSync(temporaryPath, JSON.stringify({ rooms: [...rooms.values()] }, null, 2));
+      writeFileSync(temporaryPath, JSON.stringify({ rooms: [...retainedRooms.values()] }, null, 2));
       renameSync(temporaryPath, storagePath);
+
+      return retainedRooms;
     }
   };
 }
