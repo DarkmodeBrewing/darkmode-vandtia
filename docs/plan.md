@@ -11,15 +11,17 @@
 - Fix workspace validation so `npm run lint`, `npm run test`, and `npm run build` all pass from the repository root
 - Extract testable server logic into `packages/server/src/app.ts` and add integration tests covering all Socket.IO events
 - Extract session storage helpers into `packages/client/src/session.ts` and add unit tests for read and save behaviour
+- Improve the client with reconnect-aware saved-session recovery, clearer status messaging, and a documented status/task update for this pass
 
 ## Next priorities
 
-1. Improve player experience with clearer status messages, error recovery, and a stronger lobby/gameplay presentation.
-2. Add room persistence or reconnection-friendly state storage so in-memory rooms survive server restarts.
-3. Document the exact Vändtia rule interpretation used by the shared engine and align the UI wording with those rules.
+1. Add room persistence or reconnection-friendly state storage so in-memory rooms survive server restarts.
+2. Document the exact Vändtia rule interpretation used by the shared engine and align the UI wording with those rules.
+3. Add broader client interaction coverage around reconnect flows and turn-state rendering.
 
 ## Definition of done for the next pass
 
 - Room state survives a server restart or is recoverable from a persistent store
-- Player-facing error messages and status cues are consistent across lobby and gameplay screens
+- Saved rooms survive a server restart or can be restored from a persistent store
 - The rule documentation covers every special-card case handled by the shared engine
+- Client interaction coverage exercises reconnect flows and gameplay status rendering

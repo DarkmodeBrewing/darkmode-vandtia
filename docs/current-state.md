@@ -38,7 +38,8 @@ The server also tracks player/socket connections and pushes room updates to each
 `packages/client` is a React app that:
 
 - stores a local player session in browser storage via `session.ts` (`readStoredSession` / `saveSession`)
-- reconnects to a saved room session when possible
+- reconnects to a saved room session when possible and keeps retrying after socket reconnects
+- shows a status panel for offline recovery, lobby readiness blockers, active-turn guidance, and end-of-round outcomes
 - shows lobby seats, readiness, and connection state
 - renders the active pile, turn owner, and winner
 - enables only legal actions for the current player based on the shared action state
@@ -80,10 +81,10 @@ Current automated tests cover:
 - `game:pickup-pile` — picks up the pile when no legal play remains
 - disconnect handling — marks the player as disconnected and emits the updated room
 
-**Client session** (`packages/client/test/session.test.ts`):
+**Client tests** (`packages/client/test`):
 
-- `readStoredSession` — returns null when empty, parses a stored session, and clears corrupt data
-- `saveSession` — writes, overwrites, and removes a session from storage
+- `session.test.ts` — `readStoredSession` returns null when empty, parses a stored session, and clears corrupt data; `saveSession` writes, overwrites, and removes a session from storage
+- `status.test.ts` — covers offline recovery messaging, lobby readiness guidance, forced chance-draw guidance, and winner summaries
 
 ## Known gaps
 

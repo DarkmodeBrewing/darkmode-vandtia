@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { io, type Socket } from 'socket.io-client';
 import type { Card, RoomView } from '@darkmode-vandtia/shared';
 import { readStoredSession, saveSession, type PlayerSession, type SessionState } from './session';
+import { getStatusSummary, type SessionRestoreState } from './status';
 import './App.css';
 
 type AckResponse<T> = { ok: true; data: T } | { ok: false; error: string };
@@ -16,18 +17,37 @@ function App() {
   const [roomCode, setRoomCode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [connected, setConnected] = useState(false);
+  const [needsSync, setNeedsSync] = useState(() => Boolean(readStoredSession()));
+  const [sessionRestoreState, setSessionRestoreState] = useState<SessionRestoreState>(() =>
+    readStoredSession() ? 'restoring' : 'idle'
+  );
+  const sessionRef = useRef<SessionState>(session);
+
+  useEffect(() => {
+    sessionRef.current = session;
+  }, [session]);
 
   useEffect(() => {
     socket.on('connect', () => {
       setConnected(true);
+      if (sessionRef.current) {
+        setNeedsSync(true);
+        setSessionRestoreState('restoring');
+      }
     });
 
     socket.on('disconnect', () => {
       setConnected(false);
+      if (sessionRef.current) {
+        setNeedsSync(true);
+      }
     });
 
     socket.on('room:update', (nextRoom: RoomView) => {
       setRoom(nextRoom);
+      setError(null);
+      setSessionRestoreState('restored');
+      setNeedsSync(false);
     });
 
     return () => {
@@ -41,22 +61,39 @@ function App() {
   }, [session]);
 
   useEffect(() => {
-    if (!session) {
+    if (!session || !connected || !needsSync) {
       return;
     }
-
     socket.emit('room:sync', session, (response: AckResponse<PlayerSession>) => {
       if (!response.ok) {
-        setSession(null);
         setRoom(null);
         setError(response.error);
+        setSessionRestoreState('failed');
+        return;
       }
+
+      setSession(response.data);
+      setNeedsSync(false);
+      setSessionRestoreState('restored');
+      setError(null);
     });
-  }, [session, socket]);
+  }, [connected, needsSync, session, socket]);
 
   const me = useMemo(() => room?.players.find((player) => player.isMe) ?? null, [room]);
   const actionState = room?.game?.actionState ?? null;
   const isMyTurn = room?.game?.currentTurnPlayerId === room?.mePlayerId;
+  const canStart = room?.status === 'lobby' && room.players.length >= 2 && room.players.every((player) => player.ready);
+  const controlsDisabled = !connected || sessionRestoreState === 'restoring';
+  const statusSummary = useMemo(
+    () =>
+      getStatusSummary({
+        connected,
+        room,
+        sessionRestoreState,
+        sessionRoomCode: session?.roomCode ?? null
+      }),
+    [connected, room, session?.roomCode, sessionRestoreState]
+  );
 
   async function emitAck<TPayload extends object, TResult extends PlayerSession | { roomCode: string; playerId: string }>(
     event: string,
@@ -65,6 +102,14 @@ function App() {
     return new Promise((resolve) => {
       socket.emit(event, payload, (response: AckResponse<TResult>) => resolve(response));
     });
+  }
+
+  function clearSavedSession() {
+    setRoom(null);
+    setSession(null);
+    setError(null);
+    setNeedsSync(false);
+    setSessionRestoreState('idle');
   }
 
   async function createRoom() {
@@ -81,6 +126,8 @@ function App() {
 
     setSession(response.data);
     setRoomCode(response.data.roomCode);
+    setNeedsSync(false);
+    setSessionRestoreState('restored');
   }
 
   async function joinRoom() {
@@ -97,6 +144,9 @@ function App() {
     }
 
     setSession(response.data);
+    setRoomCode(response.data.roomCode);
+    setNeedsSync(false);
+    setSessionRestoreState('restored');
   }
 
   async function sendPlayerEvent(event: string, extra?: Record<string, string | boolean>) {
@@ -124,8 +174,6 @@ function App() {
     );
   }
 
-  const canStart = room?.status === 'lobby' && room.players.length >= 2 && room.players.every((player) => player.ready);
-
   return (
     <main className="app-shell">
       <section className="panel panel--header">
@@ -136,6 +184,28 @@ function App() {
         <div className={`status-pill ${connected ? 'status-pill--online' : 'status-pill--offline'}`}>
           {connected ? 'Connected' : 'Offline'}
         </div>
+      </section>
+
+      <section className={`panel panel--status panel--status-${statusSummary.tone}`}>
+        <div className="status-summary">
+          <div>
+            <h2>Status</h2>
+            <p className="status-summary__title">{statusSummary.title}</p>
+            <p>{statusSummary.detail}</p>
+          </div>
+          {!room && session ? (
+            <button className="secondary-button" onClick={clearSavedSession} type="button">
+              Clear saved session
+            </button>
+          ) : null}
+        </div>
+        {statusSummary.bullets.length > 0 ? (
+          <ul className="status-list">
+            {statusSummary.bullets.map((bullet) => (
+              <li key={bullet}>{bullet}</li>
+            ))}
+          </ul>
+        ) : null}
       </section>
 
       {error ? <section className="panel panel--error">{error}</section> : null}
@@ -151,7 +221,7 @@ function App() {
 
           <div className="panel action-panel">
             <h2>Create room</h2>
-            <button disabled={!name.trim()} onClick={() => void createRoom()} type="button">
+            <button disabled={!name.trim() || controlsDisabled} onClick={() => void createRoom()} type="button">
               Create a room
             </button>
           </div>
@@ -162,7 +232,7 @@ function App() {
               Room code
               <input onChange={(event) => setRoomCode(event.target.value.toUpperCase())} placeholder="ABC123" value={roomCode} />
             </label>
-            <button disabled={!name.trim() || !roomCode.trim()} onClick={() => void joinRoom()} type="button">
+            <button disabled={!name.trim() || !roomCode.trim() || controlsDisabled} onClick={() => void joinRoom()} type="button">
               Join room
             </button>
           </div>
@@ -176,15 +246,7 @@ function App() {
               <h2>Room {room.roomCode}</h2>
               <p>{room.status === 'lobby' ? 'Waiting for players to ready up.' : room.status === 'finished' ? 'Game finished.' : 'Game in progress.'}</p>
             </div>
-            <button
-              className="secondary-button"
-              onClick={() => {
-                setRoom(null);
-                setSession(null);
-                setError(null);
-              }}
-              type="button"
-            >
+            <button className="secondary-button" onClick={clearSavedSession} type="button">
               Leave saved session
             </button>
           </section>
@@ -241,9 +303,7 @@ function App() {
                   {room.game.activePile.length > 0 ? room.game.activePile.map((card) => <span className="card card--pile" key={card.id}>{card.label}</span>) : <span className="pile-empty">Pile is empty</span>}
                 </div>
                 {room.game.winnerPlayerId ? (
-                  <p className="winner-banner">
-                    Winner: {room.players.find((player) => player.playerId === room.game?.winnerPlayerId)?.name}
-                  </p>
+                  <p className="winner-banner">Winner: {room.players.find((player) => player.playerId === room.game?.winnerPlayerId)?.name}</p>
                 ) : null}
               </section>
 
