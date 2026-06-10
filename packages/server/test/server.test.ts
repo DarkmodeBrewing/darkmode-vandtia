@@ -1,3 +1,6 @@
+import { mkdtempSync, rmSync } from 'node:fs';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { io as connectSocket, type Socket } from 'socket.io-client';
 import { createApp, type AppInstance } from '../src/app';
@@ -38,9 +41,13 @@ describe('server socket events', () => {
   let app: AppInstance;
   let socketA: Socket;
   let socketB: Socket;
+  let tempDirectory: string;
+  let roomStoragePath: string;
 
   beforeEach(async () => {
-    app = createApp('http://localhost:5173');
+    tempDirectory = mkdtempSync(join(tmpdir(), 'darkmode-vandtia-server-'));
+    roomStoragePath = join(tempDirectory, 'rooms.json');
+    app = createApp('http://localhost:5173', { roomStoragePath });
     await new Promise<void>((resolve) => app.server.listen(0, resolve));
     socketA = await connect(getPort(app));
     socketB = await connect(getPort(app));
@@ -51,6 +58,7 @@ describe('server socket events', () => {
     socketB.disconnect();
     await new Promise<void>((resolve) => app.io.close(() => resolve()));
     await new Promise<void>((resolve) => app.server.close(() => resolve()));
+    rmSync(tempDirectory, { recursive: true, force: true });
   });
 
   describe('room:create', () => {
@@ -373,6 +381,80 @@ describe('server socket events', () => {
 
       const ada = afterDisconnect.players.find((p) => p.name === 'Ada');
       expect(ada?.connected).toBe(false);
+    });
+
+    it('keeps a reconnected player marked online when an older socket disconnects', async () => {
+      const created = await emit<SessionData>(socketA, 'room:create', { playerName: 'Ada' });
+      expect(created.ok).toBe(true);
+      if (!created.ok) return;
+
+      const reconnectedSocket = await connect(getPort(app));
+
+      try {
+        const synced = await emit<SessionData>(reconnectedSocket, 'room:sync', {
+          roomCode: created.data.roomCode,
+          sessionId: created.data.sessionId
+        });
+        expect(synced.ok).toBe(true);
+
+        socketA.disconnect();
+        await new Promise((resolve) => setTimeout(resolve, 25));
+        expect(app.rooms.get(created.data.roomCode)?.players.find((player) => player.playerId === created.data.playerId)?.connected).toBe(true);
+      } finally {
+        reconnectedSocket.disconnect();
+      }
+    });
+  });
+
+  describe('room persistence', () => {
+    it('reloads saved rooms after a server restart and allows session recovery', async () => {
+      const created = await emit<SessionData>(socketA, 'room:create', { playerName: 'Ada' });
+      expect(created.ok).toBe(true);
+      if (!created.ok) return;
+
+      const joined = await emit<SessionData>(socketB, 'room:join', {
+        playerName: 'Bea',
+        roomCode: created.data.roomCode
+      });
+      expect(joined.ok).toBe(true);
+      if (!joined.ok) return;
+
+      await emit<PlayerData>(socketA, 'room:toggle-ready', {
+        roomCode: created.data.roomCode,
+        playerId: created.data.playerId
+      });
+      await emit<PlayerData>(socketB, 'room:toggle-ready', {
+        roomCode: created.data.roomCode,
+        playerId: joined.data.playerId
+      });
+      await emit<PlayerData>(socketA, 'game:start', {
+        roomCode: created.data.roomCode,
+        playerId: created.data.playerId
+      });
+
+      socketA.disconnect();
+      socketB.disconnect();
+      await new Promise<void>((resolve) => app.io.close(() => resolve()));
+      await new Promise<void>((resolve) => app.server.close(() => resolve()));
+
+      app = createApp('http://localhost:5173', { roomStoragePath });
+      await new Promise<void>((resolve) => app.server.listen(0, resolve));
+      socketA = await connect(getPort(app));
+      socketB = await connect(getPort(app));
+
+      const restoredRoom = app.rooms.get(created.data.roomCode);
+      expect(restoredRoom?.status).toBe('in_progress');
+      expect(restoredRoom?.players.every((player) => player.connected === false)).toBe(true);
+
+      const synced = await emit<SessionData>(socketA, 'room:sync', {
+        roomCode: created.data.roomCode,
+        sessionId: created.data.sessionId
+      });
+      expect(synced.ok).toBe(true);
+      if (!synced.ok) return;
+
+      expect(synced.data.playerId).toBe(created.data.playerId);
+      expect(app.rooms.get(created.data.roomCode)?.players.find((player) => player.playerId === created.data.playerId)?.connected).toBe(true);
     });
   });
 });
