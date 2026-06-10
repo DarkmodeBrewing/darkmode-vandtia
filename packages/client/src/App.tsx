@@ -202,10 +202,7 @@ function App() {
 
     return (
       <section className="player-zone">
-        <div className="section-heading">
-          <h3>{title}</h3>
-          <span>{cards.length} cards</span>
-        </div>
+        <h3>{title}</h3>
         {cards.length > 0 ? (
           <div className="card-grid">
             {cards.map((card) =>
@@ -214,9 +211,7 @@ function App() {
               })
             )}
           </div>
-        ) : (
-          <p className="zone-empty">No cards here.</p>
-        )}
+        ) : null}
       </section>
     );
   }
@@ -224,15 +219,9 @@ function App() {
   return (
     <main className="app-shell">
       <section className="panel panel--header">
-        <div className="hero-copy">
-          <h1>Vändtia Online</h1>
-          <p>mobile-first authoritative multiplayer card rooms for up to four players.</p>
-        </div>
-        <div className="hero-badges">
-          <div className={`status-pill ${connected ? 'status-pill--online' : 'status-pill--offline'}`}>
-            {connected ? 'Connected' : 'Offline'}
-          </div>
-          <span className="info-pill">Touch-friendly controls</span>
+        <h1>Vändtia Online</h1>
+        <div className={`status-pill ${connected ? 'status-pill--online' : 'status-pill--offline'}`}>
+          {connected ? 'Connected' : 'Offline'}
         </div>
       </section>
 
@@ -262,15 +251,6 @@ function App() {
 
       {!room ? (
         <section className="landing-grid">
-          <div className="panel panel--intro">
-            <h2>Quick start</h2>
-            <ul className="status-list status-list--compact">
-              <li>Choose a name before creating or joining.</li>
-              <li>Share the room code once the first player creates a table.</li>
-              <li>Saved sessions try to restore automatically after reconnects.</li>
-            </ul>
-          </div>
-
           <div className="panel action-panel">
             <h2>Player setup</h2>
             <label>
@@ -302,17 +282,14 @@ function App() {
       {room ? (
         <>
           <section className="panel room-panel">
-            <div className="room-panel__copy">
-              <h2>Room {room.roomCode}</h2>
-              <p>{room.status === 'lobby' ? 'Waiting for players to ready up.' : room.status === 'finished' ? 'Game finished.' : 'Game in progress.'}</p>
-            </div>
+            <h2>Room {room.roomCode}</h2>
             <div className="info-pill-row">
               <span className="info-pill">Phase: {roomStatusLabel}</span>
               <span className="info-pill">Ready: {readyCount}/{room.players.length}</span>
               {me ? <span className="info-pill">Seat {me.seat}</span> : null}
             </div>
             <button className="secondary-button" onClick={clearSavedSession} type="button">
-              Leave saved session
+              Leave
             </button>
           </section>
 
@@ -347,27 +324,11 @@ function App() {
 
           {room.game ? (
             <>
-              <section className="panel game-meta-grid">
-                <article className="stat-card">
-                  <span className="stat-card__label">Turn</span>
-                  <strong>{room.players.find((player) => player.playerId === room.game?.currentTurnPlayerId)?.name ?? '—'}</strong>
-                </article>
-                <article className="stat-card">
-                  <span className="stat-card__label">Draw pile</span>
-                  <strong>{room.game.drawPileCount}</strong>
-                </article>
-                <article className="stat-card">
-                  <span className="stat-card__label">Discarded</span>
-                  <strong>{room.game.discardedPileCount}</strong>
-                </article>
-                <article className="stat-card">
-                  <span className="stat-card__label">Minimum rank</span>
-                  <strong>{getMinimumRankLabel(room)}</strong>
-                </article>
-              </section>
-
               <section className="panel pile-panel">
-                <h2>Active pile</h2>
+                <div className="section-heading">
+                  <h2>Active pile</h2>
+                  <span>Draw: {room.game.drawPileCount} · Min: {getMinimumRankLabel(room)}</span>
+                </div>
                 <div className="card-row">
                   {room.game.activePile.length > 0 ? room.game.activePile.map((card) => <span className="card card--pile" key={card.id}>{card.label}</span>) : <span className="pile-empty">Pile is empty</span>}
                 </div>
@@ -378,10 +339,7 @@ function App() {
 
               {me ? (
                 <section className="panel">
-                  <div className="section-heading">
-                    <h2>Your cards</h2>
-                    <span>{isMyTurn ? `Play from ${actionState?.availableSource ?? 'hand'}.` : 'Waiting for your turn.'}</span>
-                  </div>
+                  <h2>Your cards</h2>
 
                   {renderCardGroup('Hand', 'hand', me.hand)}
                   {renderCardGroup('Face-up table cards', 'faceUp', me.faceUp)}

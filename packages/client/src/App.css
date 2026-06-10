@@ -55,7 +55,6 @@ input {
 .panel--header,
 .room-panel,
 .action-row,
-.game-meta-grid,
 .status-summary {
   display: flex;
   gap: 0.75rem;
@@ -71,13 +70,10 @@ input {
   flex-direction: column;
 }
 
-.hero-copy p,
-.room-panel__copy p,
 .section-heading span {
   color: #cbd5e1;
 }
 
-.hero-badges,
 .info-pill-row {
   display: flex;
   gap: 0.5rem;
@@ -117,21 +113,15 @@ input {
   margin-top: 0.4rem;
 }
 
-.status-list--compact {
-  margin-top: 0;
-}
-
 .landing-grid,
 .seat-grid,
-.game-meta-grid,
 .card-grid {
   display: grid;
   gap: 0.75rem;
 }
 
 .landing-grid,
-.seat-grid,
-.game-meta-grid {
+.seat-grid {
   grid-template-columns: minmax(0, 1fr);
 }
 
@@ -234,19 +224,6 @@ input {
   width: 100%;
 }
 
-.stat-card {
-  padding: 0.9rem 1rem;
-  border-radius: 0.9rem;
-  background: #1f2937;
-}
-
-.stat-card__label {
-  display: block;
-  margin-bottom: 0.35rem;
-  color: #94a3b8;
-  font-size: 0.9rem;
-}
-
 .winner-banner {
   color: #fde68a;
   font-weight: 700;
@@ -254,11 +231,6 @@ input {
 
 .pile-empty {
   color: #94a3b8;
-}
-
-.zone-empty {
-  color: #94a3b8;
-  margin-bottom: 0;
 }
 
 @media (min-width: 640px) {
@@ -272,8 +244,7 @@ input {
   }
 
   .landing-grid,
-  .seat-grid,
-  .game-meta-grid {
+  .seat-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -299,9 +270,5 @@ input {
 
   .seat-grid {
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  }
-
-  .game-meta-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }

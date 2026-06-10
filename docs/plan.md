@@ -20,6 +20,7 @@
 - Add focused client UI interaction tests for mobile-first layout behavior (landing view, lobby view, status panel, connection state)
 - Add configurable age-based cleanup for in-progress rooms via `maxInProgressAgeMs` storage option and `ROOM_MAX_IN_PROGRESS_AGE_HOURS` env var
 - Add operator documentation covering retention configuration, storage behavior, health endpoint, and monitoring expectations
+- Strip client UI to bare minimum: remove hero subtitle, quick-start panel, touch-friendly pill, game-meta stat cards, card-count badges, zone-empty text, and turn-hint spans; fold draw count and minimum-rank constraint inline into the pile panel
 
 ## Next priorities
 
