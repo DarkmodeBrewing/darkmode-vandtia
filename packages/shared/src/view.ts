@@ -1,9 +1,9 @@
 import { getPlayerActionState } from './engine';
 import type { Card, PlayerState, PlayerView, RoomState, RoomView } from './types';
 
-function maskCards(cards: Card[]): Card[] {
+function maskCards(cards: Card[], options: { preserveIds?: boolean } = {}): Card[] {
   return cards.map((card, index) => ({
-    id: `hidden-${index}-${card.id}`,
+    id: options.preserveIds ? card.id : `hidden-${index}-${card.id}`,
     rank: 2,
     suit: 'clubs',
     label: 'Hidden'
@@ -22,7 +22,7 @@ function toPlayerView(player: PlayerState, viewerPlayerId: string): PlayerView {
     hand: isMe ? player.hand : maskCards(player.hand),
     handCount: player.hand.length,
     faceUp: player.table.faceUp,
-    faceDown: isMe ? player.table.faceDown : maskCards(player.table.faceDown),
+    faceDown: maskCards(player.table.faceDown, { preserveIds: isMe }),
     faceDownCount: player.table.faceDown.length,
     isMe
   };

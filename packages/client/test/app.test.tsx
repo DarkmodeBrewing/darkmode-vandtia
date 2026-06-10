@@ -239,3 +239,95 @@ describe('App – lobby view', () => {
     expect(screen.getByText(/Ready: 1\/1/i)).toBeTruthy();
   });
 });
+
+describe('App – face-down gameplay', () => {
+  beforeEach(() => {
+    socketListeners.clear();
+    mockSocket.emit.mockReset();
+    localStorage.clear();
+    localStorage.setItem('darkmode-vandtia-session', JSON.stringify({ roomCode: 'TEST01', playerId: 'me', sessionId: 'session-me' }));
+  });
+
+  afterEach(() => {
+    cleanup();
+  });
+
+  it('renders own face-down cards as hidden choices and sends the selected card id', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await emit('connect');
+    await emit('room:update', {
+      roomCode: 'TEST01',
+      status: 'in_progress',
+      locked: true,
+      maxPlayers: 4,
+      mePlayerId: 'me',
+      players: [
+        {
+          playerId: 'me',
+          name: 'Ada',
+          seat: 1,
+          ready: true,
+          connected: true,
+          hand: [],
+          handCount: 0,
+          faceUp: [],
+          faceDown: [
+            { id: 'face-down-a', rank: 2, suit: 'clubs', label: 'Hidden' },
+            { id: 'face-down-b', rank: 2, suit: 'clubs', label: 'Hidden' }
+          ],
+          faceDownCount: 2,
+          isMe: true
+        },
+        {
+          playerId: 'other',
+          name: 'Bea',
+          seat: 2,
+          ready: true,
+          connected: true,
+          hand: [],
+          handCount: 1,
+          faceUp: [],
+          faceDown: [],
+          faceDownCount: 0,
+          isMe: false
+        }
+      ],
+      game: {
+        drawPile: [],
+        activePile: [{ id: 'pile-9', rank: 9, suit: 'hearts', label: '9♥' }],
+        discardedPile: [],
+        currentTurnPlayerId: 'me',
+        winnerPlayerId: null,
+        turn: {
+          playerId: 'me',
+          drewChanceCard: false,
+          availableSource: 'faceDown'
+        },
+        startedAt: new Date().toISOString(),
+        drawPileCount: 0,
+        discardedPileCount: 0,
+        actionState: {
+          availableSource: 'faceDown',
+          legalCardIds: ['face-down-a', 'face-down-b'],
+          canDrawChance: false,
+          canPickupPile: false,
+          topConstraintRank: 9
+        }
+      }
+    });
+
+    expect(screen.getByText('Choose one face-down table card to reveal.')).toBeTruthy();
+    const hiddenCards = screen.getAllByRole('button', { name: 'Hidden' });
+    expect(hiddenCards).toHaveLength(2);
+    expect((hiddenCards[0] as HTMLButtonElement).disabled).toBe(false);
+
+    await user.click(hiddenCards[0]!);
+
+    expect(mockSocket.emit).toHaveBeenLastCalledWith(
+      'game:play-card',
+      { roomCode: 'TEST01', playerId: 'me', cardId: 'face-down-a' },
+      expect.any(Function)
+    );
+  });
+});

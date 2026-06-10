@@ -21,9 +21,9 @@
 - Add configurable age-based cleanup for in-progress rooms via `maxInProgressAgeMs` storage option and `ROOM_MAX_IN_PROGRESS_AGE_HOURS` env var
 - Add operator documentation covering retention configuration, storage behavior, health endpoint, and monitoring expectations
 - Strip client UI to bare minimum: remove hero subtitle, quick-start panel, touch-friendly pill, game-meta stat cards, card-count badges, zone-empty text, and turn-hint spans; fold draw count and minimum-rank constraint inline into the pile panel
+- Add face-down card blind reveal with hidden owner views, preserved selectable card ids, and pickup penalty for illegal reveals
 
 ## Next priorities
 
-1. Add face-down card blind reveal: when a player plays from face-down, flip the card and apply a pickup penalty if it is illegal.
-2. Add end-of-round replay summary so players can review the sequence of plays after a game finishes.
-3. Add configurable room capacity so hosts can set a room to two or three players instead of the fixed maximum of four.
+1. Add end-of-round replay summary so players can review the sequence of plays after a game finishes.
+2. Add configurable room capacity so hosts can set a room to two or three players instead of the fixed maximum of four.

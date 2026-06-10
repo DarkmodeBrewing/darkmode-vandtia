@@ -21,7 +21,8 @@ This document records the exact rule interpretation currently enforced by the sh
   1. hand
   2. face-up table cards
   3. face-down table cards
-- In this prototype, face-down cards are still visible to their owner and can be chosen normally once hand and face-up cards are gone.
+- Face-down cards stay hidden from every player, including their owner, until selected. Once hand and face-up cards are gone, the owner chooses one hidden face-down card to reveal.
+- If the revealed face-down card is legal, it is played normally. If it is illegal, the revealed card and the active pile are added to that player's hand, the hand is sorted, the active pile is cleared, and the turn ends.
 - After a legal hand play, the player draws back up to 3 hand cards while the draw pile still has cards.
 - No automatic refill happens after face-up or face-down plays.
 

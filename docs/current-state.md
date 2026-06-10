@@ -58,8 +58,8 @@ In-progress rooms can be pruned automatically by age when the `ROOM_MAX_IN_PROGR
 4. Once at least two players are ready and every joined player is ready, the game starts.
 5. The shared engine deals face-down cards, face-up cards, and hand cards, then chooses the starting player by the lowest hand card.
 6. Players act in turn, following the current pile constraint and the available source order: hand, then face-up, then face-down.
-7. Special handling currently includes two as a reset card, ten as a burn card, chance draw when blocked with cards still in hand, and pile pickup when no legal play remains.
-8. Players must exhaust sources in order: hand, then face-up, then face-down; in this prototype, a player's own face-down cards remain visible and selectable.
+7. Special handling currently includes two as a reset card, ten as a burn card, chance draw when blocked with cards still in hand, pile pickup when no legal play remains, and illegal face-down reveal penalties.
+8. Players must exhaust sources in order: hand, then face-up, then face-down; face-down cards are hidden from their owner until selected, then revealed and either played or picked up with the pile if illegal.
 9. The game ends when a player clears hand, face-up, and face-down cards.
 
 ## Test coverage
@@ -74,21 +74,21 @@ Current automated tests cover:
 - drawing back up to three cards
 - chance draw followed by pile pickup
 - progression from hand to face-up to face-down cards
+- legal and illegal blind face-down card reveals
 - winner detection
 
 **Server** (`packages/server/test`):
 
-- `server.test.ts` — covers all Socket.IO events (create, join, sync, toggle-ready, start, play-card, draw-chance, pickup-pile), disconnect handling, and persisted room reload with session recovery
+- `server.test.ts` — covers all Socket.IO events (create, join, sync, toggle-ready, start, play-card, draw-chance, pickup-pile), illegal face-down reveal penalties, disconnect handling, and persisted room reload with session recovery
 - `storage.test.ts` — covers age-based retention: recent rooms are kept, rooms past the threshold are pruned on save and on load, and rooms are kept indefinitely when no limit is configured
 
 **Client tests** (`packages/client/test`):
 
 - `session.test.ts` — `readStoredSession` returns null when empty, parses a stored session, and clears corrupt data; `saveSession` writes, overwrites, and removes a session from storage
 - `status.test.ts` — covers offline and restoring recovery messaging, lobby readiness guidance, waiting-turn summaries, source-specific turn guidance, forced chance-draw guidance, and winner summaries
-- `app.test.tsx` — renders landing and lobby views in jsdom, verifies mobile-first layout containers (`.app-shell`, `.landing-grid`, `.seat-grid`) are present, checks that action buttons are disabled when inputs are empty, confirms connection state and ready-count pills update correctly after socket events
+- `app.test.tsx` — renders landing and lobby views in jsdom, verifies mobile-first layout containers (`.app-shell`, `.landing-grid`, `.seat-grid`) are present, checks that action buttons are disabled when inputs are empty, confirms connection state and ready-count pills update correctly after socket events, and verifies hidden face-down card choices emit their preserved card ids
 
 ## Known gaps
 
-- Face-down card blind reveal is not yet implemented: players currently see and select their own face-down cards, and there is no pickup penalty for playing an illegal face-down card.
 - No end-of-round replay summary is available after a game finishes.
 - Room capacity is fixed at four players and cannot be configured per room.

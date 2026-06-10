@@ -275,7 +275,9 @@ export function getPlayerActionState(room: RoomState, playerId: string): PlayerA
   const availableSource = getAvailableSource(player);
   const cards = getSourceCards(player, availableSource);
   const topConstraintRank = getTopConstraintRank(room.game.activePile);
-  const legalCardIds = cards.filter((card) => canPlayRank(card.rank, topConstraintRank)).map((card) => card.id);
+  const legalCardIds = availableSource === 'faceDown'
+    ? cards.map((card) => card.id)
+    : cards.filter((card) => canPlayRank(card.rank, topConstraintRank)).map((card) => card.id);
   const canDrawChance =
     availableSource === 'hand' && room.game.drawPile.length > 0 && !room.game.turn.drewChanceCard && legalCardIds.length === 0;
   const canPickupPile = room.game.activePile.length > 0 && legalCardIds.length === 0 && !canDrawChance;
@@ -295,11 +297,20 @@ export function playCard(room: RoomState, playerId: string, cardId: string): Roo
   const source = getAvailableSource(player);
   const card = removeCard(getSourceCards(player, source), cardId);
 
-  if (!canPlayRank(card.rank, getTopConstraintRank(game.activePile))) {
+  const isLegalPlay = canPlayRank(card.rank, getTopConstraintRank(game.activePile));
+
+  if (!isLegalPlay && source !== 'faceDown') {
     throw new Error('That card cannot be played right now.');
   }
 
   game.activePile.push(card);
+
+  if (!isLegalPlay) {
+    player.hand.push(...game.activePile);
+    player.hand = sortCardsAscending(player.hand);
+    game.activePile = [];
+    return completeTurn(nextRoom, playerId);
+  }
 
   if (card.rank === 10) {
     game.discardedPile.push(...game.activePile);
