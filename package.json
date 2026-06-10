@@ -1,21 +1,16 @@
 {
   "name": "darkmode-vandtia",
+  "private": true,
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/DarkmodeBrewing/darkmode-vandtia.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
-  "bugs": {
-    "url": "https://github.com/DarkmodeBrewing/darkmode-vandtia/issues"
-  },
-  "homepage": "https://github.com/DarkmodeBrewing/darkmode-vandtia#readme"
+    "build": "npm run build --workspace @darkmode-vandtia/shared && npm run build --workspace @darkmode-vandtia/server && npm run build --workspace @darkmode-vandtia/client",
+    "lint": "npm run lint --workspace @darkmode-vandtia/shared && npm run lint --workspace @darkmode-vandtia/server && npm run lint --workspace @darkmode-vandtia/client",
+    "test": "npm run test --workspace @darkmode-vandtia/shared && npm run test --workspace @darkmode-vandtia/server && npm run test --workspace @darkmode-vandtia/client",
+    "dev:server": "npm run dev --workspace @darkmode-vandtia/server",
+    "dev:client": "npm run dev --workspace @darkmode-vandtia/client"
+  }
 }

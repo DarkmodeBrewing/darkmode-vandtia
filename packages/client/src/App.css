@@ -1,0 +1,152 @@
+:root {
+  color: #f3f4f6;
+  background: #0f172a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+  border: 0;
+  border-radius: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: #2563eb;
+  color: #fff;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+input {
+  width: 100%;
+  border: 1px solid #334155;
+  border-radius: 0.75rem;
+  padding: 0.75rem;
+  margin-top: 0.5rem;
+  background: #020617;
+  color: #f8fafc;
+}
+
+.app-shell {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2rem;
+  display: grid;
+  gap: 1rem;
+}
+
+.panel {
+  background: #111827;
+  border: 1px solid #1f2937;
+  border-radius: 1rem;
+  padding: 1.25rem;
+}
+
+.panel--header,
+.room-panel,
+.action-row,
+.game-meta-grid {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.panel--error {
+  color: #fecaca;
+  border-color: #b91c1c;
+}
+
+.landing-grid,
+.seat-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.landing-grid {
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.seat-grid {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.seat-card {
+  padding: 1rem;
+  border-radius: 0.9rem;
+  background: #1f2937;
+}
+
+.seat-card--me {
+  outline: 2px solid #60a5fa;
+}
+
+.status-pill {
+  padding: 0.5rem 0.9rem;
+  border-radius: 999px;
+  font-weight: 700;
+}
+
+.status-pill--online {
+  background: #14532d;
+}
+
+.status-pill--offline {
+  background: #7f1d1d;
+}
+
+.card-row {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.card {
+  min-width: 4.5rem;
+  padding: 0.9rem 0.7rem;
+  border-radius: 0.75rem;
+  background: #f8fafc;
+  color: #111827;
+}
+
+.card--active {
+  outline: 3px solid #38bdf8;
+}
+
+.card--pile {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.secondary-button {
+  background: #374151;
+}
+
+.player-zone {
+  margin-top: 1rem;
+}
+
+.action-panel {
+  display: grid;
+  gap: 1rem;
+}
+
+.winner-banner {
+  color: #fde68a;
+  font-weight: 700;
+}
+
+.pile-empty {
+  color: #94a3b8;
+}

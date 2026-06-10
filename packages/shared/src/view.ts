@@ -1,0 +1,51 @@
+import { getPlayerActionState } from './engine';
+import type { Card, PlayerState, PlayerView, RoomState, RoomView } from './types';
+
+function maskCards(cards: Card[]): Card[] {
+  return cards.map(() => ({
+    id: 'hidden',
+    rank: 2,
+    suit: 'clubs',
+    label: 'Hidden'
+  }));
+}
+
+function toPlayerView(player: PlayerState, viewerPlayerId: string): PlayerView {
+  const isMe = player.playerId === viewerPlayerId;
+
+  return {
+    playerId: player.playerId,
+    name: player.name,
+    seat: player.seat,
+    ready: player.ready,
+    connected: player.connected,
+    hand: isMe ? player.hand : maskCards(player.hand),
+    handCount: player.hand.length,
+    faceUp: player.table.faceUp,
+    faceDown: isMe ? player.table.faceDown : maskCards(player.table.faceDown),
+    faceDownCount: player.table.faceDown.length,
+    isMe
+  };
+}
+
+export function toRoomView(room: RoomState, viewerPlayerId: string): RoomView {
+  return {
+    roomCode: room.roomCode,
+    status: room.status,
+    locked: room.locked,
+    maxPlayers: room.maxPlayers,
+    mePlayerId: viewerPlayerId,
+    players: room.players
+      .slice()
+      .sort((left, right) => left.seat - right.seat)
+      .map((player) => toPlayerView(player, viewerPlayerId)),
+    game: room.game
+      ? {
+          ...room.game,
+          drawPileCount: room.game.drawPile.length,
+          discardedPileCount: room.game.discardedPile.length,
+          actionState: getPlayerActionState(room, viewerPlayerId)
+        }
+      : null
+  };
+}

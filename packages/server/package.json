@@ -1,13 +1,30 @@
 {
-  "name": "server",
+  "name": "@darkmode-vandtia/server",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "private": true,
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "predev": "npm --prefix ../shared run build",
+    "dev": "tsx watch src/index.ts",
+    "prebuild": "npm --prefix ../shared run build",
+    "build": "tsc -p tsconfig.json",
+    "lint": "tsc --noEmit -p tsconfig.json",
+    "pretest": "npm --prefix ../shared run build",
+    "test": "vitest run --passWithNoTests",
+    "start": "node dist/index.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs"
+  "dependencies": {
+    "@darkmode-vandtia/shared": "file:../shared",
+    "cors": "2.8.6",
+    "express": "5.2.1",
+    "socket.io": "4.8.3"
+  },
+  "devDependencies": {
+    "@types/cors": "2.8.19",
+    "@types/express": "5.0.6",
+    "@types/node": "25.9.2",
+    "tsx": "4.22.4",
+    "typescript": "6.0.3",
+    "vitest": "4.1.8"
+  }
 }
