@@ -37,12 +37,14 @@ The server also tracks player/socket connections and pushes room updates to each
 
 `packages/client` is a React app that:
 
+- follows a mobile-first layout requirement, starting with stacked small-screen flows before expanding to larger breakpoints
 - stores a local player session in browser storage via `session.ts` (`readStoredSession` / `saveSession`)
 - reconnects to a saved room session when possible and keeps retrying after socket reconnects
 - shows a status panel for offline recovery, lobby readiness blockers, active-turn guidance, and end-of-round outcomes
 - shows lobby seats, readiness, and connection state
 - renders the active pile, turn owner, and winner
 - enables only legal actions for the current player based on the shared action state
+- keeps room summary, game stats, and card actions in mobile-friendly panels with large touch targets
 
 ## Gameplay flow implemented today
 
@@ -89,3 +91,4 @@ Current automated tests cover:
 ## Known gaps
 
 - Room state is in memory only; there is no server-side persistence layer
+- Client interaction coverage does not yet exercise the updated mobile-first room and gameplay layout
