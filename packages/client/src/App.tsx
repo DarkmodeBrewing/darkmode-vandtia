@@ -20,6 +20,16 @@ function getRoomStatusLabel(room: RoomView): string {
   }
 }
 
+function getMinimumRankLabel(room: RoomView): string {
+  const topCard = room.game?.activePile.at(-1);
+
+  if (!topCard || topCard.rank === 2) {
+    return 'Open';
+  }
+
+  return `${topCard.label}+`;
+}
+
 function App() {
   const socket = useMemo<Socket>(() => io(serverUrl, { transports: ['websocket'] }), []);
   const [room, setRoom] = useState<RoomView | null>(null);
@@ -351,8 +361,8 @@ function App() {
                   <strong>{room.game.discardedPileCount}</strong>
                 </article>
                 <article className="stat-card">
-                  <span className="stat-card__label">Top constraint</span>
-                  <strong>{room.game.actionState?.topConstraintRank ?? room.game.activePile.at(-1)?.label ?? 'Free play'}</strong>
+                  <span className="stat-card__label">Minimum rank</span>
+                  <strong>{getMinimumRankLabel(room)}</strong>
                 </article>
               </section>
 

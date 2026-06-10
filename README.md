@@ -9,6 +9,7 @@ A multiplayer Vändtia prototype built as a TypeScript workspace with a shared r
 - `packages/client` — Vite + React mobile-first browser client for lobby and gameplay interactions
 - `docs/plan.md` — delivery summary and suggested next steps
 - `docs/current-state.md` — architecture, gameplay flow, and current implementation notes
+- `docs/rules.md` — exact Vändtia rule interpretation used by the current shared engine
 
 ## Current feature set
 

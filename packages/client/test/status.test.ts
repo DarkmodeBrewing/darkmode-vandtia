@@ -99,8 +99,8 @@ describe('getStatusSummary', () => {
       })
     });
 
-    expect(summary.title).toBe('No legal hand play.');
-    expect(summary.detail).toContain('Draw a chance card');
+    expect(summary.title).toBe('No legal hand card.');
+    expect(summary.detail).toContain('Draw one chance card');
   });
 
   it('celebrates the winner once the game is finished', () => {
