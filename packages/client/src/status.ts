@@ -36,10 +36,10 @@ function getConstraintSummary(room: RoomView): string {
   }
 
   if (game.actionState?.topConstraintRank === null) {
-    return 'A two reset the pile, so any rank can be played.';
+    return 'A two reset the minimum rank, so any card can be played.';
   }
 
-  return `The current floor is ${game.activePile.at(-1)?.label ?? game.actionState?.topConstraintRank ?? 'the top card'}.`;
+  return `Play ${game.activePile.at(-1)?.label ?? game.actionState?.topConstraintRank ?? 'the top card'} or higher.`;
 }
 
 function getWaitingPlayers(room: RoomView): string[] {
@@ -173,9 +173,9 @@ export function getStatusSummary({ connected, room, sessionRestoreState, session
   if (actionState.canDrawChance) {
     return {
       tone: 'warning',
-      title: 'No legal hand play.',
-      detail: 'Draw a chance card to see if you can continue the turn.',
-      bullets: ['You can only draw a chance card once per turn.']
+      title: 'No legal hand card.',
+      detail: 'Draw one chance card. If it still cannot be played, you will have to pick up the pile.',
+      bullets: ['You can only draw one chance card per turn.']
     };
   }
 
@@ -183,7 +183,7 @@ export function getStatusSummary({ connected, room, sessionRestoreState, session
     return {
       tone: 'warning',
       title: 'Pile pickup required.',
-      detail: 'No legal play remains, so you must collect the active pile.',
+      detail: 'No legal play remains, so you must collect the active pile into your hand.',
       bullets: ['Picking up the pile ends your turn immediately.']
     };
   }

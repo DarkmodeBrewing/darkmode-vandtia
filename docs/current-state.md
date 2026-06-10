@@ -4,6 +4,8 @@
 
 This repository is a small multiplayer Vändtia workspace with one shared rules package, one realtime server package, and one web client package.
 
+The current engine rule reference lives in `docs/rules.md`.
+
 ## Architecture
 
 ### Shared package
@@ -55,7 +57,8 @@ The server stores room snapshots in `packages/server/data/rooms.json` by default
 5. The shared engine deals face-down cards, face-up cards, and hand cards, then chooses the starting player by the lowest hand card.
 6. Players act in turn, following the current pile constraint and the available source order: hand, then face-up, then face-down.
 7. Special handling currently includes two as a reset card, ten as a burn card, chance draw when blocked with cards still in hand, and pile pickup when no legal play remains.
-8. The game ends when a player clears hand, face-up, and face-down cards.
+8. Players must exhaust sources in order: hand, then face-up, then face-down; in this prototype, a player's own face-down cards remain visible and selectable.
+9. The game ends when a player clears hand, face-up, and face-down cards.
 
 ## Test coverage
 
@@ -92,3 +95,4 @@ Current automated tests cover:
 ## Known gaps
 
 - Client interaction coverage does not yet exercise the updated mobile-first room and gameplay layout
+- Persisted room storage does not yet define automatic cleanup or retention rules for abandoned or completed rooms
