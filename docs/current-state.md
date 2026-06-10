@@ -29,13 +29,15 @@ This repository is a small multiplayer Vändtia workspace with one shared rules 
 - `game:draw-chance`
 - `game:pickup-pile`
 
+The server logic lives in `packages/server/src/app.ts` as a `createApp` factory that returns the Express server, Socket.IO instance, and the in-memory rooms map. `index.ts` only reads environment variables and calls `createApp`. This split lets tests spin up isolated server instances without touching the real entry point.
+
 The server also tracks player/socket connections and pushes room updates to each player with hidden information masked where needed.
 
 ### Client package
 
 `packages/client` is a React app that:
 
-- stores a local player session in browser storage
+- stores a local player session in browser storage via `session.ts` (`readStoredSession` / `saveSession`)
 - reconnects to a saved room session when possible
 - shows lobby seats, readiness, and connection state
 - renders the active pile, turn owner, and winner
@@ -54,7 +56,9 @@ The server also tracks player/socket connections and pushes room updates to each
 
 ## Test coverage
 
-Current automated tests focus on the shared engine and cover:
+Current automated tests cover:
+
+**Shared engine** (`packages/shared/test`):
 
 - starting-player selection
 - reset chains with twos
@@ -64,9 +68,23 @@ Current automated tests focus on the shared engine and cover:
 - progression from hand to face-up to face-down cards
 - winner detection
 
+**Server** (`packages/server/test/server.test.ts`):
+
+- `room:create` — creates a room and returns session data
+- `room:join` — joins an existing room and resumes a saved session
+- `room:sync` — restores a saved session into a running room
+- `room:toggle-ready` — toggles ready state and rejects changes outside the lobby
+- `game:start` — starts the game when all players are ready
+- `game:play-card` — validates and applies a card play
+- `game:draw-chance` — draws a chance card when blocked in hand
+- `game:pickup-pile` — picks up the pile when no legal play remains
+- disconnect handling — marks the player as disconnected and emits the updated room
+
+**Client session** (`packages/client/test/session.test.ts`):
+
+- `readStoredSession` — returns null when empty, parses a stored session, and clears corrupt data
+- `saveSession` — writes, overwrites, and removes a session from storage
+
 ## Known gaps
 
-- Room state is in memory only
-- There is no server-side persistence layer
-- Server and client packages do not yet have meaningful automated tests
-- Root validation currently needs follow-up work in workspace/package resolution before it passes end to end
+- Room state is in memory only; there is no server-side persistence layer

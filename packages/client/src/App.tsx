@@ -1,43 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { io, type Socket } from 'socket.io-client';
 import type { Card, RoomView } from '@darkmode-vandtia/shared';
+import { readStoredSession, saveSession, type PlayerSession, type SessionState } from './session';
 import './App.css';
 
 type AckResponse<T> = { ok: true; data: T } | { ok: false; error: string };
 
-type PlayerSession = {
-  roomCode: string;
-  playerId: string;
-  sessionId: string;
-};
-
-type SessionState = PlayerSession | null;
-
-const STORAGE_KEY = 'darkmode-vandtia-session';
 const serverUrl = import.meta.env.VITE_SERVER_URL ?? 'http://localhost:3001';
-
-function readStoredSession(): SessionState {
-  const stored = window.localStorage.getItem(STORAGE_KEY);
-  if (!stored) {
-    return null;
-  }
-
-  try {
-    return JSON.parse(stored) as SessionState;
-  } catch {
-    window.localStorage.removeItem(STORAGE_KEY);
-    return null;
-  }
-}
-
-function saveSession(session: SessionState): void {
-  if (!session) {
-    window.localStorage.removeItem(STORAGE_KEY);
-    return;
-  }
-
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
-}
 
 function App() {
   const socket = useMemo<Socket>(() => io(serverUrl, { transports: ['websocket'] }), []);
