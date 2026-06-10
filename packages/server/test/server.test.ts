@@ -9,6 +9,7 @@ type AckResponse<T> = { ok: true; data: T } | { ok: false; error: string };
 
 type SessionData = { roomCode: string; playerId: string; sessionId: string };
 type PlayerData = { roomCode: string; playerId: string };
+const DISCONNECT_SETTLE_DELAY_MS = 25;
 
 function getPort(app: AppInstance): number {
   const address = app.server.address();
@@ -398,7 +399,7 @@ describe('server socket events', () => {
         expect(synced.ok).toBe(true);
 
         socketA.disconnect();
-        await new Promise((resolve) => setTimeout(resolve, 25));
+        await new Promise((resolve) => setTimeout(resolve, DISCONNECT_SETTLE_DELAY_MS));
         expect(app.rooms.get(created.data.roomCode)?.players.find((player) => player.playerId === created.data.playerId)?.connected).toBe(true);
       } finally {
         reconnectedSocket.disconnect();
@@ -413,7 +414,7 @@ describe('server socket events', () => {
       if (!created.ok) return;
 
       socketA.disconnect();
-      await new Promise((resolve) => setTimeout(resolve, 25));
+      await new Promise((resolve) => setTimeout(resolve, DISCONNECT_SETTLE_DELAY_MS));
 
       await new Promise<void>((resolve) => app.io.close(() => resolve()));
       await new Promise<void>((resolve) => app.server.close(() => resolve()));

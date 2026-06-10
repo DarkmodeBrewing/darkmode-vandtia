@@ -95,8 +95,12 @@ export function createApp(clientOrigin: string, options: CreateAppOptions = {}):
   function setRoom(room: RoomState): RoomState {
     rooms.set(room.roomCode, room);
     const persistedRooms = roomStore.saveRooms(rooms);
-    rooms.clear();
-    for (const [roomCode, persistedRoom] of persistedRooms) {
+    for (const roomCode of [...rooms.keys()]) {
+      if (!persistedRooms.has(roomCode)) {
+        rooms.delete(roomCode);
+      }
+    }
+    for (const [roomCode, persistedRoom] of persistedRooms.entries()) {
       rooms.set(roomCode, persistedRoom);
     }
     return room;
