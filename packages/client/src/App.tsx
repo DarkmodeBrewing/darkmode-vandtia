@@ -9,6 +9,17 @@ type AckResponse<T> = { ok: true; data: T } | { ok: false; error: string };
 
 const serverUrl = import.meta.env.VITE_SERVER_URL ?? 'http://localhost:3001';
 
+function getRoomStatusLabel(room: RoomView): string {
+  switch (room.status) {
+    case 'lobby':
+      return 'Lobby';
+    case 'finished':
+      return 'Finished';
+    default:
+      return 'In progress';
+  }
+}
+
 function App() {
   const socket = useMemo<Socket>(() => io(serverUrl, { transports: ['websocket'] }), []);
   const [room, setRoom] = useState<RoomView | null>(null);
@@ -85,7 +96,7 @@ function App() {
   const canStart = room?.status === 'lobby' && room.players.length >= 2 && room.players.every((player) => player.ready);
   const controlsDisabled = !connected || sessionRestoreState === 'restoring';
   const readyCount = room?.players.filter((player) => player.ready).length ?? 0;
-  const roomStatusLabel = room ? (room.status === 'lobby' ? 'Lobby' : room.status === 'finished' ? 'Finished' : 'In progress') : null;
+  const roomStatusLabel = room ? getRoomStatusLabel(room) : null;
   const statusSummary = useMemo(
     () =>
       getStatusSummary({
@@ -205,7 +216,7 @@ function App() {
       <section className="panel panel--header">
         <div className="hero-copy">
           <h1>Vändtia Online</h1>
-          <p>Mobile-first multiplayer card rooms for up to four players.</p>
+          <p>Mobile-first authoritative multiplayer card rooms for up to four players.</p>
         </div>
         <div className="hero-badges">
           <div className={`status-pill ${connected ? 'status-pill--online' : 'status-pill--offline'}`}>
