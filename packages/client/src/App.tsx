@@ -136,7 +136,7 @@ function App() {
     }
 
     setError(null);
-    const response = await emitAck('' + event, {
+    const response = await emitAck(event, {
       roomCode: session.roomCode,
       playerId: session.playerId,
       ...extra

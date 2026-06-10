@@ -2,8 +2,8 @@ import { getPlayerActionState } from './engine';
 import type { Card, PlayerState, PlayerView, RoomState, RoomView } from './types';
 
 function maskCards(cards: Card[]): Card[] {
-  return cards.map(() => ({
-    id: 'hidden',
+  return cards.map((card, index) => ({
+    id: `hidden-${index}-${card.id}`,
     rank: 2,
     suit: 'clubs',
     label: 'Hidden'
