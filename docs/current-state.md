@@ -46,9 +46,9 @@ In-progress rooms can be pruned automatically by age when the `ROOM_MAX_IN_PROGR
 - reconnects to a saved room session when possible and keeps retrying after socket reconnects
 - shows a status panel for offline recovery, lobby readiness blockers, active-turn guidance, and end-of-round outcomes
 - shows lobby seats, readiness, and connection state
-- renders the active pile, turn owner, and winner
+- renders the active pile with inline draw count and minimum-rank constraint
 - enables only legal actions for the current player based on the shared action state
-- keeps room summary, game stats, and card actions in mobile-friendly panels with large touch targets
+- keeps room summary, status, and card actions in bare, mobile-friendly panels with large touch targets
 
 ## Gameplay flow implemented today
 
