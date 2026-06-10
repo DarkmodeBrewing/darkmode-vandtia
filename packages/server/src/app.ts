@@ -40,10 +40,14 @@ export interface AppInstance {
 
 export interface CreateAppOptions {
   roomStoragePath?: string;
+  maxInProgressAgeMs?: number;
 }
 
 export function createApp(clientOrigin: string, options: CreateAppOptions = {}): AppInstance {
-  const roomStore = createRoomStore(options.roomStoragePath);
+  const roomStoreOptions = options.maxInProgressAgeMs !== undefined
+    ? { maxInProgressAgeMs: options.maxInProgressAgeMs }
+    : {};
+  const roomStore = createRoomStore(options.roomStoragePath, roomStoreOptions);
   const rooms = roomStore.loadRooms();
   const playerSockets = new Map<string, string>();
   const socketPlayers = new Map<string, { roomCode: string; playerId: string }>();
