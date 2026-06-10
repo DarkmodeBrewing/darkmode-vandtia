@@ -17,14 +17,12 @@
 - Document the exact Vändtia rule interpretation used by the shared engine and align the client wording with that rule reference
 - Expand client status coverage for reconnect restore messaging, waiting-turn summaries, and source-specific turn guidance
 - Add persisted-room retention rules that keep active games recoverable while pruning disconnected lobbies and finished rooms
+- Add focused client UI interaction tests for mobile-first layout behavior (landing view, lobby view, status panel, connection state)
+- Add configurable age-based cleanup for in-progress rooms via `maxInProgressAgeMs` storage option and `ROOM_MAX_IN_PROGRESS_AGE_HOURS` env var
+- Add operator documentation covering retention configuration, storage behavior, health endpoint, and monitoring expectations
 
 ## Next priorities
 
-1. Add focused client UI interaction tests for mobile-first layout behavior in the rendered app surface.
-2. Add configurable retention windows for in-progress rooms so long-abandoned games can be pruned automatically.
-3. Add operator documentation for retention configuration and storage monitoring expectations.
-
-## Definition of done for the next pass
-
-- Client UI interaction coverage exercises mobile-first layout behavior in rendered app flows
-- Persisted room storage applies configurable age-based cleanup for long-abandoned in-progress rooms
+1. Add face-down card blind reveal: when a player plays from face-down, flip the card and apply a pickup penalty if it is illegal.
+2. Add end-of-round replay summary so players can review the sequence of plays after a game finishes.
+3. Add configurable room capacity so hosts can set a room to two or three players instead of the fixed maximum of four.

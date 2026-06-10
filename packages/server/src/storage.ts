@@ -7,8 +7,14 @@ interface PersistedRooms {
   rooms?: RoomState[];
 }
 
-function shouldPersistRoom(room: RoomState): boolean {
+function shouldPersistRoom(room: RoomState, maxInProgressAgeMs?: number): boolean {
   if (room.status === 'in_progress') {
+    if (maxInProgressAgeMs !== undefined && room.game?.startedAt) {
+      const ageMs = Date.now() - new Date(room.game.startedAt).getTime();
+      if (ageMs > maxInProgressAgeMs) {
+        return false;
+      }
+    }
     return true;
   }
 
@@ -17,6 +23,13 @@ function shouldPersistRoom(room: RoomState): boolean {
   }
 
   return false;
+}
+
+export interface RoomStoreOptions {
+  /** Maximum age in milliseconds for an in-progress room to be retained on disk.
+   *  Rooms older than this threshold are pruned on the next save or load.
+   *  If omitted, in-progress rooms are kept indefinitely. */
+  maxInProgressAgeMs?: number;
 }
 
 export interface RoomStore {
@@ -39,7 +52,8 @@ function normalizeRoom(room: RoomState): RoomState {
   return nextRoom;
 }
 
-export function createRoomStore(storagePath: string = DEFAULT_ROOM_STORAGE_PATH): RoomStore {
+export function createRoomStore(storagePath: string = DEFAULT_ROOM_STORAGE_PATH, options: RoomStoreOptions = {}): RoomStore {
+  const { maxInProgressAgeMs } = options;
   return {
     storagePath,
     loadRooms() {
@@ -63,12 +77,12 @@ export function createRoomStore(storagePath: string = DEFAULT_ROOM_STORAGE_PATH)
       return new Map(
         payload.rooms
           .map((room) => normalizeRoom(room))
-          .filter((room) => shouldPersistRoom(room))
+          .filter((room) => shouldPersistRoom(room, maxInProgressAgeMs))
           .map((room) => [room.roomCode, room] as const)
       );
     },
     saveRooms(rooms) {
-      const retainedEntries = [...rooms.entries()].filter(([, room]) => shouldPersistRoom(room));
+      const retainedEntries = [...rooms.entries()].filter(([, room]) => shouldPersistRoom(room, maxInProgressAgeMs));
       const retainedRooms = new Map(retainedEntries);
 
       mkdirSync(dirname(storagePath), { recursive: true });

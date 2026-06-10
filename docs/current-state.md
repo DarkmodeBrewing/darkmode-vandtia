@@ -35,6 +35,7 @@ The server logic lives in `packages/server/src/app.ts` as a `createApp` factory 
 
 The server stores room snapshots in `packages/server/data/rooms.json` by default, resets persisted players to disconnected on startup, tracks player/socket connections, and pushes room updates to each player with hidden information masked where needed.
 Persistence retention now keeps in-progress rooms for recovery, keeps lobby rooms only while at least one player remains connected, and prunes finished rooms plus fully disconnected lobbies.
+In-progress rooms can be pruned automatically by age when the `ROOM_MAX_IN_PROGRESS_AGE_HOURS` environment variable is set. See `docs/operator.md` for the full configuration reference.
 
 ### Client package
 
@@ -75,25 +76,19 @@ Current automated tests cover:
 - progression from hand to face-up to face-down cards
 - winner detection
 
-**Server** (`packages/server/test/server.test.ts`):
+**Server** (`packages/server/test`):
 
-- `room:create` — creates a room and returns session data
-- `room:join` — joins an existing room and resumes a saved session
-- `room:sync` — restores a saved session into a running room
-- `room:toggle-ready` — toggles ready state and rejects changes outside the lobby
-- `game:start` — starts the game when all players are ready
-- `game:play-card` — validates and applies a card play
-- `game:draw-chance` — draws a chance card when blocked in hand
-- `game:pickup-pile` — picks up the pile when no legal play remains
-- disconnect handling — marks the player as disconnected and emits the updated room
-- persisted room reload — restores saved rooms after restart and allows saved sessions to resync
+- `server.test.ts` — covers all Socket.IO events (create, join, sync, toggle-ready, start, play-card, draw-chance, pickup-pile), disconnect handling, and persisted room reload with session recovery
+- `storage.test.ts` — covers age-based retention: recent rooms are kept, rooms past the threshold are pruned on save and on load, and rooms are kept indefinitely when no limit is configured
 
 **Client tests** (`packages/client/test`):
 
 - `session.test.ts` — `readStoredSession` returns null when empty, parses a stored session, and clears corrupt data; `saveSession` writes, overwrites, and removes a session from storage
 - `status.test.ts` — covers offline and restoring recovery messaging, lobby readiness guidance, waiting-turn summaries, source-specific turn guidance, forced chance-draw guidance, and winner summaries
+- `app.test.tsx` — renders landing and lobby views in jsdom, verifies mobile-first layout containers (`.app-shell`, `.landing-grid`, `.seat-grid`) are present, checks that action buttons are disabled when inputs are empty, confirms connection state and ready-count pills update correctly after socket events
 
 ## Known gaps
 
-- Client interaction coverage does not yet exercise the updated mobile-first room and gameplay layout in rendered component flows
-- Persisted room storage does not yet apply age-based cleanup for abandoned in-progress rooms
+- Face-down card blind reveal is not yet implemented: players currently see and select their own face-down cards, and there is no pickup penalty for playing an illegal face-down card.
+- No end-of-round replay summary is available after a game finishes.
+- Room capacity is fixed at four players and cannot be configured per room.
