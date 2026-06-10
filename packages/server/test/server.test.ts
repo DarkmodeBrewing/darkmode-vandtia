@@ -407,6 +407,25 @@ describe('server socket events', () => {
   });
 
   describe('room persistence', () => {
+    it('drops disconnected lobby rooms from persisted storage before restart', async () => {
+      const created = await emit<SessionData>(socketA, 'room:create', { playerName: 'Ada' });
+      expect(created.ok).toBe(true);
+      if (!created.ok) return;
+
+      socketA.disconnect();
+      await new Promise((resolve) => setTimeout(resolve, 25));
+
+      await new Promise<void>((resolve) => app.io.close(() => resolve()));
+      await new Promise<void>((resolve) => app.server.close(() => resolve()));
+
+      app = createApp('http://localhost:5173', { roomStoragePath });
+      await new Promise<void>((resolve) => app.server.listen(0, resolve));
+      socketA = await connect(getPort(app));
+      socketB = await connect(getPort(app));
+
+      expect(app.rooms.has(created.data.roomCode)).toBe(false);
+    });
+
     it('reloads saved rooms after a server restart and allows session recovery', async () => {
       const created = await emit<SessionData>(socketA, 'room:create', { playerName: 'Ada' });
       expect(created.ok).toBe(true);

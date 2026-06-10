@@ -15,13 +15,16 @@
 - Record the mobile-first client requirement and ship a mobile-first client layout pass for room setup, room status, and in-game card controls
 - Persist server room state to disk, reload saved rooms after restart, and add restart recovery coverage for saved sessions
 - Document the exact Vändtia rule interpretation used by the shared engine and align the client wording with that rule reference
+- Expand client status coverage for reconnect restore messaging, waiting-turn summaries, and source-specific turn guidance
+- Add persisted-room retention rules that keep active games recoverable while pruning disconnected lobbies and finished rooms
 
 ## Next priorities
 
-1. Add broader client interaction coverage around reconnect flows, turn-state rendering, and the mobile-first client layout.
-2. Decide on room retention and cleanup rules for persisted room files so completed or abandoned rooms do not accumulate forever.
+1. Add focused client UI interaction tests for mobile-first layout behavior in the rendered app surface.
+2. Add configurable retention windows for in-progress rooms so long-abandoned games can be pruned automatically.
+3. Add operator documentation for retention configuration and storage monitoring expectations.
 
 ## Definition of done for the next pass
 
-- Client interaction coverage exercises reconnect flows, gameplay status rendering, and the mobile-first client layout
-- Persisted room storage has clear retention and cleanup behaviour
+- Client UI interaction coverage exercises mobile-first layout behavior in rendered app flows
+- Persisted room storage applies configurable age-based cleanup for long-abandoned in-progress rooms

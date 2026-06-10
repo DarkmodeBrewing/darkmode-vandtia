@@ -7,6 +7,18 @@ interface PersistedRooms {
   rooms?: RoomState[];
 }
 
+function shouldPersistRoom(room: RoomState): boolean {
+  if (room.status === 'in_progress') {
+    return true;
+  }
+
+  if (room.status === 'lobby') {
+    return room.players.some((player) => player.connected);
+  }
+
+  return false;
+}
+
 export interface RoomStore {
   storagePath: string;
   loadRooms(): Map<string, RoomState>;
@@ -48,12 +60,20 @@ export function createRoomStore(storagePath: string = DEFAULT_ROOM_STORAGE_PATH)
         throw new Error(`Persisted room store at ${storagePath} is invalid.`);
       }
 
-      return new Map(payload.rooms.map((room) => {
-        const normalizedRoom = normalizeRoom(room);
-        return [normalizedRoom.roomCode, normalizedRoom] as const;
-      }));
+      return new Map(
+        payload.rooms
+          .map((room) => normalizeRoom(room))
+          .filter((room) => shouldPersistRoom(room))
+          .map((room) => [room.roomCode, room] as const)
+      );
     },
     saveRooms(rooms) {
+      for (const [roomCode, room] of rooms) {
+        if (!shouldPersistRoom(room)) {
+          rooms.delete(roomCode);
+        }
+      }
+
       mkdirSync(dirname(storagePath), { recursive: true });
       const temporaryPath = `${storagePath}.tmp`;
       writeFileSync(temporaryPath, JSON.stringify({ rooms: [...rooms.values()] }, null, 2));
