@@ -6,7 +6,7 @@ A multiplayer Vändtia prototype built as a TypeScript workspace with a shared r
 
 - `packages/shared` — card models, room/game state types, gameplay rules, and player-safe room views
 - `packages/server` — authoritative multiplayer room server built with Express and Socket.IO
-- `packages/client` — Vite + React browser client for lobby and gameplay interactions
+- `packages/client` — Vite + React mobile-first browser client for lobby and gameplay interactions
 - `docs/plan.md` — delivery summary and suggested next steps
 - `docs/current-state.md` — architecture, gameplay flow, and current implementation notes
 
@@ -19,6 +19,11 @@ A multiplayer Vändtia prototype built as a TypeScript workspace with a shared r
 - Play hand, face-up, and face-down cards using shared Vändtia rules
 - Draw a chance card or pick up the pile when blocked
 - Reveal the current turn, pile state, winner, and context-aware action guidance in the client
+- Use a mobile-first client layout that keeps room controls, turn state, and cards usable on small screens before expanding to larger viewports
+
+## Hard requirement
+
+- The client should be built mobile first.
 
 ## Getting started
 
