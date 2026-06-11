@@ -271,6 +271,10 @@ export function createApp(clientOrigin: string, options: CreateAppOptions = {}):
 
     socket.on('game:start', (payload: PlayerPayload, ack: Ack<{ roomCode: string; playerId: string }>) => {
       handleMutation(socket.id, payload, ack, (room) => {
+        if (room.hostPlayerId !== payload.playerId) {
+          throw new Error('Only the room host can start the game.');
+        }
+
         if (!canStartGame(room)) {
           throw new Error('All joined players must be ready before the game can start.');
         }

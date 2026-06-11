@@ -65,6 +65,7 @@ export function createRoomState(roomCode: string, options: { maxPlayers?: number
   return {
     roomCode,
     maxPlayers: normalizeRoomMaxPlayers(options.maxPlayers),
+    hostPlayerId: null,
     status: 'lobby',
     locked: false,
     players: [],
@@ -181,6 +182,7 @@ export function addPlayerToRoom(room: RoomState, player: PlayerState): RoomState
   }
 
   const nextRoom = cloneRoom(room);
+  nextRoom.hostPlayerId ??= player.playerId;
   nextRoom.players.push(player);
   nextRoom.players.sort((left, right) => left.seat - right.seat);
   return nextRoom;

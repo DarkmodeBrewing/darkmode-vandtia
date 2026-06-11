@@ -43,6 +43,7 @@ export const DEFAULT_ROOM_STORAGE_PATH = fileURLToPath(new URL('../data/rooms.js
 function normalizeRoom(room: RoomState): RoomState {
   const nextRoom = structuredClone(room);
   nextRoom.roomCode = nextRoom.roomCode.toUpperCase();
+  nextRoom.hostPlayerId ??= nextRoom.players[0]?.playerId ?? null;
   nextRoom.players.sort((left, right) => left.seat - right.seat);
 
   for (const player of nextRoom.players) {

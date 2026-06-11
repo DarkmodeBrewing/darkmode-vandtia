@@ -143,7 +143,8 @@ describe('App – lobby view', () => {
       roomCode: 'TEST01',
       status: 'lobby',
       locked: false,
-      maxPlayers: 4,
+      maxPlayers: 3,
+      hostPlayerId: 'me',
       mePlayerId: 'me',
       players: [
         {
@@ -152,6 +153,7 @@ describe('App – lobby view', () => {
           seat: 1,
           ready: false,
           connected: true,
+          isHost: true,
           hand: [],
           handCount: 0,
           faceUp: [],
@@ -175,7 +177,8 @@ describe('App – lobby view', () => {
       roomCode: 'TEST01',
       status: 'lobby',
       locked: false,
-      maxPlayers: 4,
+      maxPlayers: 3,
+      hostPlayerId: 'me',
       mePlayerId: 'me',
       players: [
         {
@@ -184,6 +187,7 @@ describe('App – lobby view', () => {
           seat: 1,
           ready: false,
           connected: true,
+          isHost: true,
           hand: [],
           handCount: 0,
           faceUp: [],
@@ -206,7 +210,8 @@ describe('App – lobby view', () => {
       roomCode: 'TEST01',
       status: 'lobby',
       locked: false,
-      maxPlayers: 4,
+      maxPlayers: 3,
+      hostPlayerId: 'me',
       mePlayerId: 'me',
       players: [
         {
@@ -215,6 +220,7 @@ describe('App – lobby view', () => {
           seat: 1,
           ready: false,
           connected: true,
+          isHost: true,
           hand: [],
           handCount: 0,
           faceUp: [],
@@ -230,6 +236,54 @@ describe('App – lobby view', () => {
     expect((startButton as HTMLButtonElement).disabled).toBe(true);
   });
 
+
+  it('hides the start-game button for non-host lobby players', async () => {
+    render(<App />);
+    await emit('connect');
+    await emit('room:update', {
+      roomCode: 'TEST01',
+      status: 'lobby',
+      locked: false,
+      maxPlayers: 3,
+      hostPlayerId: 'host',
+      mePlayerId: 'me',
+      players: [
+        {
+          playerId: 'host',
+          name: 'Ada',
+          seat: 1,
+          ready: true,
+          connected: true,
+          isHost: true,
+          hand: [],
+          handCount: 0,
+          faceUp: [],
+          faceDown: [],
+          faceDownCount: 0,
+          isMe: false
+        },
+        {
+          playerId: 'me',
+          name: 'Bea',
+          seat: 2,
+          ready: true,
+          connected: true,
+          isHost: false,
+          hand: [],
+          handCount: 0,
+          faceUp: [],
+          faceDown: [],
+          faceDownCount: 0,
+          isMe: true
+        }
+      ],
+      game: null
+    });
+
+    expect(screen.queryByRole('button', { name: /Start game/i })).toBeNull();
+    expect(screen.getByText(/Only the host can start the game/i)).toBeTruthy();
+  });
+
   it('renders room meta pills with phase and ready count', async () => {
     render(<App />);
     await emit('connect');
@@ -237,7 +291,8 @@ describe('App – lobby view', () => {
       roomCode: 'TEST01',
       status: 'lobby',
       locked: false,
-      maxPlayers: 4,
+      maxPlayers: 3,
+      hostPlayerId: 'me',
       mePlayerId: 'me',
       players: [
         {
@@ -246,6 +301,7 @@ describe('App – lobby view', () => {
           seat: 1,
           ready: true,
           connected: true,
+          isHost: true,
           hand: [],
           handCount: 0,
           faceUp: [],
@@ -259,7 +315,7 @@ describe('App – lobby view', () => {
 
     expect(screen.getByText(/Phase: Lobby/i)).toBeTruthy();
     expect(screen.getByText(/Ready: 1\/1/i)).toBeTruthy();
-    expect(screen.getByText(/Seats: 1\/4/i)).toBeTruthy();
+    expect(screen.getByText(/Seats: 1\/3/i)).toBeTruthy();
   });
 });
 
@@ -283,7 +339,8 @@ describe('App – face-down gameplay', () => {
       roomCode: 'TEST01',
       status: 'in_progress',
       locked: true,
-      maxPlayers: 4,
+      maxPlayers: 3,
+      hostPlayerId: 'me',
       mePlayerId: 'me',
       players: [
         {
@@ -292,6 +349,7 @@ describe('App – face-down gameplay', () => {
           seat: 1,
           ready: true,
           connected: true,
+          isHost: true,
           hand: [],
           handCount: 0,
           faceUp: [],
@@ -308,6 +366,7 @@ describe('App – face-down gameplay', () => {
           seat: 2,
           ready: true,
           connected: true,
+          isHost: true,
           hand: [],
           handCount: 1,
           faceUp: [],
@@ -373,7 +432,8 @@ describe('App – replay summary', () => {
       roomCode: 'TEST02',
       status: 'finished',
       locked: true,
-      maxPlayers: 4,
+      maxPlayers: 3,
+      hostPlayerId: 'me',
       mePlayerId: 'me',
       players: [
         {
@@ -382,6 +442,7 @@ describe('App – replay summary', () => {
           seat: 1,
           ready: true,
           connected: true,
+          isHost: true,
           hand: [],
           handCount: 0,
           faceUp: [],
@@ -395,6 +456,7 @@ describe('App – replay summary', () => {
           seat: 2,
           ready: true,
           connected: true,
+          isHost: true,
           hand: [],
           handCount: 1,
           faceUp: [],

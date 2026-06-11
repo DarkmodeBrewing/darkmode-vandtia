@@ -65,6 +65,7 @@ export interface GameState {
 export interface RoomState {
   roomCode: string;
   maxPlayers: number;
+  hostPlayerId: string | null;
   status: RoomStatus;
   locked: boolean;
   players: PlayerState[];
@@ -86,6 +87,7 @@ export interface PlayerView {
   seat: number;
   ready: boolean;
   connected: boolean;
+  isHost: boolean;
   hand: Card[];
   handCount: number;
   faceUp: Card[];
@@ -99,6 +101,7 @@ export interface RoomView {
   status: RoomStatus;
   locked: boolean;
   maxPlayers: number;
+  hostPlayerId: string | null;
   mePlayerId: string;
   players: PlayerView[];
   game: (GameState & {
