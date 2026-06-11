@@ -27,14 +27,15 @@ The current engine rule reference lives in `docs/rules.md`.
 - `room:join`
 - `room:sync`
 - `room:toggle-ready`
+- `room:leave`
 - `game:start`
 - `game:play-card`
 - `game:draw-chance`
 - `game:pickup-pile`
 
-The server logic lives in `packages/server/src/app.ts` as a `createApp` factory that returns the Express server, Socket.IO instance, and the room map loaded from persistent storage. `index.ts` only reads environment variables and calls `createApp`. This split lets tests spin up isolated server instances without touching the real entry point. Room persistence, room-code/seat allocation, connection marking, and socket/player lookup details are contained in `room-registry.ts` so Socket.IO handlers stay focused on event validation and game mutations.
+The server logic lives in `packages/server/src/app.ts` as a `createApp` factory that returns the Express server, Socket.IO instance, and the room map loaded from persistent storage. `index.ts` only reads environment variables and calls `createApp`. This split lets tests spin up isolated server instances without touching the real entry point. Room persistence, room-code/seat allocation, connection marking, room removal, and socket/player lookup details are contained in `room-registry.ts` so Socket.IO handlers stay focused on event validation and game mutations.
 
-The server stores room snapshots in `packages/server/data/rooms.json` by default, resets persisted players to disconnected on startup, tracks player/socket connections, and pushes room updates to each player with hidden information masked where needed.
+The server stores room snapshots in `packages/server/data/rooms.json` by default, resets persisted players to disconnected on startup, tracks player/socket connections, and pushes room updates to each player with hidden information masked where needed. Players can explicitly leave rooms: lobby players are removed and their seats become available for later joiners, while players who leave after a game starts stay seated and are marked disconnected so the active game state is not corrupted.
 Persistence retention now keeps in-progress rooms for recovery, keeps lobby rooms only while at least one player remains connected, and prunes finished rooms plus fully disconnected lobbies.
 In-progress rooms can be pruned automatically by age when the `ROOM_MAX_IN_PROGRESS_AGE_HOURS` environment variable is set. See `docs/operator.md` for the full configuration reference.
 
@@ -84,17 +85,16 @@ Current automated tests cover:
 
 **Server** (`packages/server/test`):
 
-- `server.test.ts` — covers all Socket.IO events (create, join, sync, toggle-ready, start, play-card, draw-chance, pickup-pile), host-only game starts, illegal face-down reveal penalties, disconnect handling, and persisted room reload with session recovery
+- `server.test.ts` — covers all Socket.IO events (create, join, sync, leave, toggle-ready, start, play-card, draw-chance, pickup-pile), lobby leave/reseat behavior, host-only game starts, illegal face-down reveal penalties, disconnect handling, and persisted room reload with session recovery
 - `storage.test.ts` — covers age-based retention: recent rooms are kept, rooms past the threshold are pruned on save and on load, and rooms are kept indefinitely when no limit is configured
 
 **Client tests** (`packages/client/test`):
 
 - `session.test.ts` — `readStoredSession` returns null when empty, parses a stored session, and clears corrupt data; `saveSession` writes, overwrites, and removes a session from storage
 - `status.test.ts` — covers offline and restoring recovery messaging, host-aware lobby readiness guidance, waiting-turn summaries, source-specific turn guidance, forced chance-draw guidance, and winner summaries
-- `app.test.tsx` — renders landing and lobby views in jsdom, verifies mobile-first layout containers (`.app-shell`, `.landing-grid`, `.seat-grid`) are present, checks that action buttons are disabled when inputs are empty, confirms connection state and ready-count pills update correctly after socket events, verifies non-host players see host-only start guidance, verifies hidden face-down card choices emit their preserved card ids, and checks completed-round replay drawer/filter behavior
+- `app.test.tsx` — renders landing and lobby views in jsdom, verifies mobile-first layout containers (`.app-shell`, `.landing-grid`, `.seat-grid`) are present, checks that action buttons are disabled when inputs are empty, confirms connection state and ready-count pills update correctly after socket events, verifies non-host players see host-only start guidance, verifies hidden face-down card choices emit their preserved card ids, confirms the Leave room button sends `room:leave`, and checks completed-round replay drawer/filter behavior
 
 ## Known gaps
 
-- There is no explicit room-leave/reseat server behavior yet; the current Leave button only clears the local saved session.
 - There is no new-round flow yet after a finished game; players still need to create a fresh room to replay.
 - There is no host-transfer behavior yet if the original room creator leaves permanently.

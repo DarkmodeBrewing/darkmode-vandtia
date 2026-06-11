@@ -136,6 +136,26 @@ function App() {
     setSessionRestoreState('idle');
   }
 
+  async function leaveRoom() {
+    if (!session || !connected) {
+      clearSavedSession();
+      return;
+    }
+
+    setError(null);
+    const response = await emitAck('room:leave', {
+      roomCode: session.roomCode,
+      playerId: session.playerId
+    });
+
+    if (!response.ok) {
+      setError(response.error);
+      return;
+    }
+
+    clearSavedSession();
+  }
+
   async function createRoom() {
     setError(null);
     const response = await emitAck<{ playerName: string; sessionId?: string; maxPlayers: number }, PlayerSession>('room:create', {
@@ -298,8 +318,8 @@ function App() {
               <span className="info-pill">Seats: {room.players.length}/{room.maxPlayers}</span>
               {me ? <span className="info-pill">Seat {me.seat}{isHost ? ' · Host' : ''}</span> : null}
             </div>
-            <button className="secondary-button" onClick={clearSavedSession} type="button">
-              Leave
+            <button className="secondary-button" onClick={() => void leaveRoom()} type="button">
+              Leave room
             </button>
           </section>
 

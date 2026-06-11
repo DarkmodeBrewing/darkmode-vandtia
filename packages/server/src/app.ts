@@ -11,6 +11,7 @@ import {
   drawChanceCard,
   pickupPile,
   playCard,
+  removePlayerFromRoom,
   normalizeRoomMaxPlayers,
   startGame,
   toRoomView,
@@ -180,6 +181,32 @@ export function createApp(clientOrigin: string, options: CreateAppOptions = {}):
         const player = syncedRoom.players.find((entry) => entry.sessionId === sessionId)!;
         attachPlayer(socket.id, syncedRoom, player.playerId);
         ack({ ok: true, data: { roomCode, playerId: player.playerId, sessionId } });
+      } catch (error) {
+        ack({ ok: false, error: error instanceof Error ? error.message : 'Unexpected server error.' });
+      }
+    });
+
+    socket.on('room:leave', (payload: PlayerPayload, ack: Ack<{ roomCode: string; playerId: string }>) => {
+      try {
+        const room = roomRegistry.getRoom(payload.roomCode);
+        getPlayerFromRoom(room, payload.playerId);
+        roomRegistry.clearSocket(socket.id);
+        if (roomRegistry.isCurrentPlayerSocket(payload.playerId, socket.id)) {
+          roomRegistry.clearPlayerSocket(payload.playerId);
+        }
+
+        if (room.status === 'lobby') {
+          const nextRoom = removePlayerFromRoom(room, payload.playerId);
+          if (nextRoom.players.length === 0) {
+            roomRegistry.deleteRoom(nextRoom.roomCode);
+          } else {
+            emitRoom(roomRegistry.saveRoom(nextRoom));
+          }
+        } else {
+          emitRoom(roomRegistry.markPlayerConnection(room, payload.playerId, false));
+        }
+
+        ack({ ok: true, data: { roomCode: room.roomCode, playerId: payload.playerId } });
       } catch (error) {
         ack({ ok: false, error: error instanceof Error ? error.message : 'Unexpected server error.' });
       }
