@@ -5,8 +5,8 @@ This document records the exact rule interpretation currently enforced by the sh
 ## Lobby and setup
 
 - A room supports the host-selected capacity: two or three players.
-- The room creator is the room host.
-- A game can only start from the lobby when the host requests it, at least two players have joined, and every joined player is marked ready.
+- The room creator is the initial room host. If the host permanently leaves, host status transfers to the next connected seated player, falling back to seat order if no connected replacement exists.
+- A game can only start from the lobby when the current host requests it, at least two players have joined, and every joined player is marked ready.
 - When the game starts, each player is dealt:
   - 3 face-down table cards
   - 3 face-up table cards
@@ -61,4 +61,4 @@ This document records the exact rule interpretation currently enforced by the sh
 
 - A player wins as soon as they have no hand cards, no face-up table cards, and no face-down table cards after completing a legal play.
 - When that happens, the room moves to the finished state and no further turns are taken.
-- After a finished game, the host can set up the next round in the same room. This returns the room to the lobby, clears the previous deal from every player, clears ready checks, and keeps the same room code and seats.
+- After a finished game, the current host can set up the next round in the same room. This returns the room to the lobby, clears the previous deal from every player, clears ready checks, and keeps the same room code and seats.

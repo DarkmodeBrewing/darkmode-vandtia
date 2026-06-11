@@ -16,6 +16,7 @@ import {
   normalizeRoomMaxPlayers,
   startGame,
   toRoomView,
+  transferHostAfterPermanentLeave,
   type RoomState
 } from '@darkmode-vandtia/shared';
 import { RoomRegistry } from './room-registry.js';
@@ -204,7 +205,8 @@ export function createApp(clientOrigin: string, options: CreateAppOptions = {}):
             emitRoom(roomRegistry.saveRoom(nextRoom));
           }
         } else {
-          emitRoom(roomRegistry.markPlayerConnection(room, payload.playerId, false));
+          const disconnectedRoom = roomRegistry.markPlayerConnection(room, payload.playerId, false);
+          emitRoom(roomRegistry.saveRoom(transferHostAfterPermanentLeave(disconnectedRoom, payload.playerId)));
         }
 
         ack({ ok: true, data: { roomCode: room.roomCode, playerId: payload.playerId } });

@@ -74,7 +74,6 @@ describe('server socket events', () => {
       expect(app.rooms.size).toBe(1);
     });
 
-
     it('creates rooms with the requested two- or three-player capacity', async () => {
       const response = await emit<SessionData>(socketA, 'room:create', { playerName: 'Ada', maxPlayers: 2 });
       expect(response.ok).toBe(true);
@@ -125,7 +124,6 @@ describe('server socket events', () => {
       if (!joined.ok) return;
       expect(joined.data.roomCode).toBe(created.data.roomCode);
     });
-
 
     it('prevents joining after the configured room capacity is filled', async () => {
       const created = await emit<SessionData>(socketA, 'room:create', { playerName: 'Ada', maxPlayers: 2 });
@@ -282,6 +280,29 @@ describe('server socket events', () => {
       expect(player?.connected).toBe(false);
       expect(player?.hand.length).toBeGreaterThan(0);
     });
+
+    it('transfers host status when an in-progress host leaves permanently', async () => {
+      const { roomCode, playerAId, playerBId } = await startTwoPlayerGame();
+
+      const left = await emit<PlayerData>(socketA, 'room:leave', {
+        roomCode,
+        playerId: playerAId
+      });
+      expect(left.ok).toBe(true);
+
+      expect(app.rooms.get(roomCode)?.hostPlayerId).toBe(playerBId);
+
+      const room = app.rooms.get(roomCode)!;
+      room.status = 'finished';
+      room.game!.winnerPlayerId = playerBId;
+      app.rooms.set(roomCode, room);
+
+      const nextRound = await emit<PlayerData>(socketB, 'game:new-round', {
+        roomCode,
+        playerId: playerBId
+      });
+      expect(nextRound.ok).toBe(true);
+    });
   });
 
   describe('room:toggle-ready', () => {
@@ -364,7 +385,6 @@ describe('server socket events', () => {
       });
       expect(response.ok).toBe(false);
     });
-
 
     it('returns an error when a non-host tries to start the game', async () => {
       const createdA = await emit<SessionData>(socketA, 'room:create', { playerName: 'Ada' });

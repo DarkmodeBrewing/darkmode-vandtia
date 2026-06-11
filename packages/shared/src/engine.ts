@@ -151,6 +151,25 @@ export function addPlayerToRoom(room: RoomState, player: PlayerState): RoomState
   return nextRoom;
 }
 
+export function transferHostAfterPermanentLeave(room: RoomState, playerId: string): RoomState {
+  if (room.hostPlayerId !== playerId) {
+    return cloneRoom(room);
+  }
+
+  const nextRoom = cloneRoom(room);
+  const nextHost = nextRoom.players
+    .filter((player) => player.playerId !== playerId)
+    .sort((left, right) => {
+      if (left.connected !== right.connected) {
+        return left.connected ? -1 : 1;
+      }
+
+      return left.seat - right.seat;
+    })[0];
+
+  nextRoom.hostPlayerId = nextHost?.playerId ?? null;
+  return nextRoom;
+}
 
 export function removePlayerFromRoom(room: RoomState, playerId: string): RoomState {
   if (room.status !== 'lobby' || room.locked) {
@@ -161,12 +180,9 @@ export function removePlayerFromRoom(room: RoomState, playerId: string): RoomSta
     throw new Error('Player not found.');
   }
 
-  const nextRoom = cloneRoom(room);
+  let nextRoom = cloneRoom(room);
   nextRoom.players = nextRoom.players.filter((player) => player.playerId !== playerId);
-
-  if (nextRoom.hostPlayerId === playerId) {
-    nextRoom.hostPlayerId = nextRoom.players[0]?.playerId ?? null;
-  }
+  nextRoom = transferHostAfterPermanentLeave(nextRoom, playerId);
 
   nextRoom.players.sort((left, right) => left.seat - right.seat);
   return nextRoom;
