@@ -14,6 +14,7 @@ import {
   resetFinishedGameToLobby,
   startGame,
   toRoomView,
+  transferHostAfterPermanentLeave,
   type Card,
   type CardRank,
   type Suit
@@ -73,6 +74,23 @@ describe('shared game engine', () => {
 
     expect(room.hostPlayerId).toBe('player-2');
     expect(beaView?.isHost).toBe(true);
+  });
+
+  it('passes active-game host status to a connected player when the host permanently leaves', () => {
+    const room = transferHostAfterPermanentLeave(createLobby(['Ada', 'Bea', 'Cal']), 'player-1');
+    const beaView = toRoomView(room, 'player-2').players.find((player) => player.playerId === 'player-2');
+
+    expect(room.hostPlayerId).toBe('player-2');
+    expect(beaView?.isHost).toBe(true);
+  });
+
+  it('prefers connected players when transferring host status after a permanent leave', () => {
+    let room = createLobby(['Ada', 'Bea', 'Cal']);
+    room.players.find((player) => player.playerId === 'player-2')!.connected = false;
+
+    room = transferHostAfterPermanentLeave(room, 'player-1');
+
+    expect(room.hostPlayerId).toBe('player-3');
   });
 
   it('resets a finished game to the lobby for another round', () => {

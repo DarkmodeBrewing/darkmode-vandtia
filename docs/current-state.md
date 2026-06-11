@@ -36,7 +36,7 @@ The current engine rule reference lives in `docs/rules.md`.
 
 The server logic lives in `packages/server/src/app.ts` as a `createApp` factory that returns the Express server, Socket.IO instance, and the room map loaded from persistent storage. `index.ts` only reads environment variables and calls `createApp`. This split lets tests spin up isolated server instances without touching the real entry point. Room persistence, room-code/seat allocation, connection marking, room removal, and socket/player lookup details are contained in `room-registry.ts` so Socket.IO handlers stay focused on event validation and game mutations.
 
-The server stores room snapshots in `packages/server/data/rooms.json` by default, resets persisted players to disconnected on startup, tracks player/socket connections, and pushes room updates to each player with hidden information masked where needed. Players can explicitly leave rooms: lobby players are removed and their seats become available for later joiners, while players who leave after a game starts stay seated and are marked disconnected so the active game state is not corrupted. After a game finishes, the host can reset the same room back to the lobby for another ready-up and deal without sharing a new room code. Deployment guidance in `docs/deployment.md` covers the production split between static client assets and the Socket.IO server, including reverse-proxy routing for `/socket.io/` and `/health`.
+The server stores room snapshots in `packages/server/data/rooms.json` by default, resets persisted players to disconnected on startup, tracks player/socket connections, and pushes room updates to each player with hidden information masked where needed. Players can explicitly leave rooms: lobby players are removed and their seats become available for later joiners, while players who leave after a game starts stay seated and are marked disconnected so the active game state is not corrupted. If the leaving player is the current host, host status transfers to the next connected seated player so host-only controls remain available. After a game finishes, the host can reset the same room back to the lobby for another ready-up and deal without sharing a new room code. Deployment guidance in `docs/deployment.md` covers the production split between static client assets and the Socket.IO server, including reverse-proxy routing for `/socket.io/` and `/health`.
 Persistence retention now keeps in-progress rooms for recovery, keeps lobby rooms only while at least one player remains connected, and prunes finished rooms plus fully disconnected lobbies.
 In-progress rooms can be pruned automatically by age when the `ROOM_MAX_IN_PROGRESS_AGE_HOURS` environment variable is set. See `docs/operator.md` for the full configuration reference.
 
@@ -59,15 +59,15 @@ In-progress rooms can be pruned automatically by age when the `ROOM_MAX_IN_PROGR
 
 1. A player creates a room and becomes seat 1.
 2. Other players join with a room code until the room is full.
-3. The room creator is tracked as the host; players toggle ready in the lobby.
-4. Once at least two players have joined and every joined player is ready, only the host can start the game.
+3. The room creator is tracked as the host; if that host permanently leaves, host status transfers to the next connected seated player. Players toggle ready in the lobby.
+4. Once at least two players have joined and every joined player is ready, only the current host can start the game.
 5. The shared engine deals face-down cards, face-up cards, and hand cards, then chooses the starting player by the lowest hand card.
 6. Players act in turn, following the current pile constraint and the available source order: hand, then face-up, then face-down.
 7. Special handling currently includes two as a reset card, ten as a burn card, chance draw when blocked with cards still in hand, pile pickup when no legal play remains, and illegal face-down reveal penalties.
 8. Players must exhaust sources in order: hand, then face-up, then face-down; face-down cards are hidden from their owner until selected, then revealed and either played or picked up with the pile if illegal.
 9. Each card play, burn, chance draw, pile pickup, and illegal face-down reveal penalty is recorded in the round replay log.
 10. The game ends when a player clears hand, face-up, and face-down cards, and the client shows the completed replay sequence behind a collapsible detail panel that can filter by action type.
-11. The host can set up the next round from the finished state, returning everyone to the lobby with empty cards and fresh ready checks while keeping the same room code.
+11. The current host can set up the next round from the finished state, returning everyone to the lobby with empty cards and fresh ready checks while keeping the same room code.
 
 ## Test coverage
 
@@ -88,7 +88,7 @@ Current automated tests cover:
 
 **Server** (`packages/server/test`):
 
-- `server.test.ts` — covers all Socket.IO events (create, join, sync, leave, toggle-ready, start, new-round, play-card, draw-chance, pickup-pile), lobby leave/reseat behavior, host-only game starts, illegal face-down reveal penalties, disconnect handling, and persisted room reload with session recovery
+- `server.test.ts` — covers all Socket.IO events (create, join, sync, leave, toggle-ready, start, new-round, play-card, draw-chance, pickup-pile), lobby leave/reseat behavior, host-only game starts, host transfer after permanent leave, illegal face-down reveal penalties, disconnect handling, and persisted room reload with session recovery
 - `storage.test.ts` — covers age-based retention: recent rooms are kept, rooms past the threshold are pruned on save and on load, and rooms are kept indefinitely when no limit is configured
 
 **Client tests** (`packages/client/test`):
@@ -99,4 +99,5 @@ Current automated tests cover:
 
 ## Known gaps
 
-- There is no host-transfer behavior yet if the original room creator leaves permanently.
+- There is no inactive-turn timeout or skip flow yet if a disconnected player blocks an active game indefinitely.
+- Runtime observability is still limited to `/health` plus host/platform logs.
