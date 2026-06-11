@@ -25,6 +25,7 @@
 - Add end-of-round replay summary that records plays, burns, chance draws, pickups, and illegal face-down reveal penalties, then renders the completed sequence after a round finishes
 - Add configurable room capacity so hosts can set a room to two or three players
 - Add host-only lobby controls so only the room creator can start games and future room-level settings have an authority anchor
+- Split oversized client/server/shared responsibilities by extracting display-label helpers, room/socket registry helpers, and player-card rule helpers so the main App, server factory, and engine stay focused
 
 ## Next priorities
 

@@ -1,5 +1,8 @@
 import { createStandardDeck, shuffleDeck, sortCardsAscending } from './cards';
-import type { Card, CardRank, CardSource, PlayerActionState, PlayerState, RoomState, RoundReplayEntry } from './types';
+import { getAvailableSource, getSourceCards, isPlayerOut, removeCard, sortPlayerCards } from './player-cards';
+import type { Card, CardRank, PlayerActionState, PlayerState, RoomState, RoundReplayEntry } from './types';
+
+export { getAvailableSource, isPlayerOut } from './player-cards';
 
 export const ROOM_MIN_PLAYERS = 2;
 export const ROOM_MAX_PLAYERS = 3;
@@ -23,30 +26,6 @@ function getPlayer(room: RoomState, playerId: string): PlayerState {
   }
 
   return player;
-}
-
-function getSourceCards(player: PlayerState, source: CardSource): Card[] {
-  if (source === 'hand') {
-    return player.hand;
-  }
-
-  return source === 'faceUp' ? player.table.faceUp : player.table.faceDown;
-}
-
-function removeCard(cards: Card[], cardId: string): Card {
-  const cardIndex = cards.findIndex((card) => card.id === cardId);
-
-  if (cardIndex < 0) {
-    throw new Error('Card not found in the active source.');
-  }
-
-  return cards.splice(cardIndex, 1)[0]!;
-}
-
-function sortPlayerCards(player: PlayerState): void {
-  player.hand = sortCardsAscending(player.hand);
-  player.table.faceUp = sortCardsAscending(player.table.faceUp);
-  player.table.faceDown = sortCardsAscending(player.table.faceDown);
 }
 
 export function normalizeRoomMaxPlayers(maxPlayers: number | undefined): number {
@@ -90,18 +69,6 @@ export function createEmptyPlayerState(playerId: string, sessionId: string, name
   };
 }
 
-export function getAvailableSource(player: PlayerState): CardSource {
-  if (player.hand.length > 0) {
-    return 'hand';
-  }
-
-  if (player.table.faceUp.length > 0) {
-    return 'faceUp';
-  }
-
-  return 'faceDown';
-}
-
 export function getTopConstraintRank(activePile: Card[]): CardRank | null {
   if (activePile.length === 0) {
     return null;
@@ -121,10 +88,6 @@ export function canPlayRank(rank: CardRank, topConstraintRank: CardRank | null):
 
 function getAlivePlayers(room: RoomState): PlayerState[] {
   return room.players.filter((player) => !isPlayerOut(player));
-}
-
-export function isPlayerOut(player: PlayerState): boolean {
-  return player.hand.length === 0 && player.table.faceUp.length === 0 && player.table.faceDown.length === 0;
 }
 
 function getNextActivePlayerId(room: RoomState, currentPlayerId: string): string {
