@@ -74,6 +74,21 @@ describe('server socket events', () => {
       expect(app.rooms.size).toBe(1);
     });
 
+
+    it('creates rooms with the requested two- or three-player capacity', async () => {
+      const response = await emit<SessionData>(socketA, 'room:create', { playerName: 'Ada', maxPlayers: 2 });
+      expect(response.ok).toBe(true);
+      if (!response.ok) return;
+      expect(app.rooms.get(response.data.roomCode)?.maxPlayers).toBe(2);
+    });
+
+    it('rejects unsupported room capacities', async () => {
+      const response = await emit<SessionData>(socketA, 'room:create', { playerName: 'Ada', maxPlayers: 4 });
+      expect(response.ok).toBe(false);
+      if (response.ok) return;
+      expect(response.error).toMatch(/capacity/i);
+    });
+
     it('returns an error when playerName is missing', async () => {
       const response = await emit<SessionData>(socketA, 'room:create', {});
       expect(response.ok).toBe(false);
@@ -109,6 +124,32 @@ describe('server socket events', () => {
       expect(joined.ok).toBe(true);
       if (!joined.ok) return;
       expect(joined.data.roomCode).toBe(created.data.roomCode);
+    });
+
+
+    it('prevents joining after the configured room capacity is filled', async () => {
+      const created = await emit<SessionData>(socketA, 'room:create', { playerName: 'Ada', maxPlayers: 2 });
+      expect(created.ok).toBe(true);
+      if (!created.ok) return;
+
+      const joined = await emit<SessionData>(socketB, 'room:join', {
+        playerName: 'Bea',
+        roomCode: created.data.roomCode
+      });
+      expect(joined.ok).toBe(true);
+
+      const socketC = await connect(getPort(app));
+      try {
+        const rejected = await emit<SessionData>(socketC, 'room:join', {
+          playerName: 'Cal',
+          roomCode: created.data.roomCode
+        });
+        expect(rejected.ok).toBe(false);
+        if (rejected.ok) return;
+        expect(rejected.error).toMatch(/full/i);
+      } finally {
+        socketC.disconnect();
+      }
     });
 
     it('returns an error for an unknown room code', async () => {

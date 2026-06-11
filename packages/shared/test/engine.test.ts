@@ -35,6 +35,22 @@ function createLobby(names: string[]): ReturnType<typeof createRoomState> {
 }
 
 describe('shared game engine', () => {
+
+  it('creates two-player and three-player rooms but rejects other capacities', () => {
+    expect(createRoomState('DUO001', { maxPlayers: 2 }).maxPlayers).toBe(2);
+    expect(createRoomState('TRIO01', { maxPlayers: 3 }).maxPlayers).toBe(3);
+    expect(() => createRoomState('SOLO01', { maxPlayers: 1 })).toThrow(/capacity/i);
+    expect(() => createRoomState('FOUR01', { maxPlayers: 4 })).toThrow(/capacity/i);
+  });
+
+  it('enforces the configured room capacity when joining', () => {
+    let room = createRoomState('DUO001', { maxPlayers: 2 });
+    room = addPlayerToRoom(room, createEmptyPlayerState('player-1', 'session-1', 'Ada', 1));
+    room = addPlayerToRoom(room, createEmptyPlayerState('player-2', 'session-2', 'Bea', 2));
+
+    expect(() => addPlayerToRoom(room, createEmptyPlayerState('player-3', 'session-3', 'Cal', 3))).toThrow(/full/i);
+  });
+
   it('selects the starting player by the lowest hand card', () => {
     const room = createLobby(['Ada', 'Bea']);
     const deck = deckFromSpecs([

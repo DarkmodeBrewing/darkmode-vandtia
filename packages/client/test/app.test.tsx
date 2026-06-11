@@ -91,6 +91,28 @@ describe('App – landing view', () => {
     expect((createButton as HTMLButtonElement).disabled).toBe(false);
   });
 
+
+  it('lets the host choose room capacity and sends it when creating a room', async () => {
+    const user = userEvent.setup();
+    mockSocket.emit.mockImplementation((event: string, _payload: unknown, ack?: (response: unknown) => void) => {
+      if (event === 'room:create') {
+        ack?.({ ok: true, data: { roomCode: 'TEST01', playerId: 'me', sessionId: 'session-me' } });
+      }
+    });
+
+    render(<App />);
+    await emit('connect');
+    await user.type(screen.getByPlaceholderText(/Enter your name/i), 'Ada');
+    await user.selectOptions(screen.getByLabelText(/Room capacity/i), '2');
+    await user.click(screen.getByRole('button', { name: /Create a room/i }));
+
+    expect(mockSocket.emit).toHaveBeenLastCalledWith(
+      'room:create',
+      { playerName: 'Ada', sessionId: undefined, maxPlayers: 2 },
+      expect.any(Function)
+    );
+  });
+
   it('shows the offline status pill before the socket connects', () => {
     render(<App />);
     expect(screen.getByText('Offline')).toBeTruthy();
@@ -237,6 +259,7 @@ describe('App – lobby view', () => {
 
     expect(screen.getByText(/Phase: Lobby/i)).toBeTruthy();
     expect(screen.getByText(/Ready: 1\/1/i)).toBeTruthy();
+    expect(screen.getByText(/Seats: 1\/4/i)).toBeTruthy();
   });
 });
 

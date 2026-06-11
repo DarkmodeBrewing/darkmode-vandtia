@@ -46,7 +46,7 @@ In-progress rooms can be pruned automatically by age when the `ROOM_MAX_IN_PROGR
 - reconnects to a saved room session when possible and keeps retrying after socket reconnects
 - shows a status panel for offline recovery, lobby readiness blockers, active-turn guidance, and end-of-round outcomes
 - renders an end-of-round replay summary after a winner is declared so players can review the action sequence
-- shows lobby seats, readiness, and connection state
+- shows lobby seats, room capacity, readiness, and connection state
 - renders the active pile with inline draw count and minimum-rank constraint
 - enables only legal actions for the current player based on the shared action state
 - keeps room summary, status, and card actions in bare, mobile-friendly panels with large touch targets
@@ -93,5 +93,5 @@ Current automated tests cover:
 
 ## Known gaps
 
-- Room capacity is fixed at four players and cannot be configured per room.
 - Replay summaries are always expanded after the round; there is no drawer or filtering for very long games yet.
+- Any player in the lobby can currently press Start game once everyone is ready; there is no host-only permission model yet.
