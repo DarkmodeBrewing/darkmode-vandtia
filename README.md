@@ -10,10 +10,11 @@ A multiplayer Vändtia prototype built as a TypeScript workspace with a shared r
 - `docs/plan.md` — delivery summary and suggested next steps
 - `docs/current-state.md` — architecture, gameplay flow, and current implementation notes
 - `docs/rules.md` — exact Vändtia rule interpretation used by the current shared engine
+- `docs/deployment.md` — production build, routing, and deployment guidance
 
 ## Current feature set
 
-- Create or join a room for up to four players
+- Create or join a host-sized room for two or three players
 - Restore a saved player session into an existing room and clear stale local session state when needed
 - Persist room state on the server so rooms and saved sessions can survive a server restart
 - Apply persisted-room cleanup rules that prune finished rooms and fully disconnected lobbies while keeping in-progress rooms recoverable
@@ -37,6 +38,7 @@ Run from the repository root:
 3. `npm run dev:client`
 
 The server defaults to `http://localhost:3001` and the client defaults to `http://localhost:5173`.
+The development client connects to `VITE_SERVER_URL` when that environment variable is set, otherwise it uses `http://localhost:3001`.
 The server persists rooms to `packages/server/data/rooms.json` by default and can override that path with `ROOM_STORAGE_PATH`.
 Persistence keeps in-progress games for recovery, keeps lobby rooms only while at least one player is connected, and removes finished rooms.
 
@@ -52,3 +54,4 @@ Persistence keeps in-progress games for recovery, keeps lobby rooms only while a
 
 - `docs/plan.md`
 - `docs/current-state.md`
+- `docs/deployment.md`
