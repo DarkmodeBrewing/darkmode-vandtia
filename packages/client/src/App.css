@@ -299,3 +299,46 @@ input {
   font-weight: 700;
   margin-right: 0.45rem;
 }
+
+.replay-toolbar {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.replay-toolbar .secondary-button {
+  width: 100%;
+}
+
+.replay-filter {
+  display: grid;
+  gap: 0.4rem;
+  color: #cbd5e1;
+  font-weight: 700;
+}
+
+.replay-filter select {
+  width: 100%;
+  border: 1px solid #334155;
+  border-radius: 0.75rem;
+  padding: 0.75rem;
+  background: #020617;
+  color: #f8fafc;
+  font: inherit;
+}
+
+.replay-summary {
+  margin: 0;
+  color: #cbd5e1;
+}
+
+@media (min-width: 640px) {
+  .replay-toolbar {
+    grid-template-columns: auto minmax(12rem, 16rem);
+    align-items: end;
+    justify-content: space-between;
+  }
+
+  .replay-toolbar .secondary-button {
+    width: auto;
+  }
+}
