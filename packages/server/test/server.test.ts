@@ -397,6 +397,46 @@ describe('server socket events', () => {
     });
   });
 
+  describe('game:new-round', () => {
+    it('returns a finished room to the lobby so players can ready up again', async () => {
+      const { roomCode, playerAId } = await startTwoPlayerGame();
+      const room = app.rooms.get(roomCode)!;
+      room.status = 'finished';
+      room.game!.winnerPlayerId = playerAId;
+      app.rooms.set(roomCode, room);
+
+      const updatePromise = waitForEvent<{ status: string; game: unknown; players: Array<{ ready: boolean }> }>(socketA, 'room:update');
+      const response = await emit<PlayerData>(socketA, 'game:new-round', {
+        roomCode,
+        playerId: playerAId
+      });
+
+      expect(response.ok).toBe(true);
+      const update = await updatePromise;
+      expect(update.status).toBe('lobby');
+      expect(update.game).toBeNull();
+      expect(update.players.every((player) => player.ready === false)).toBe(true);
+      expect(app.rooms.get(roomCode)?.locked).toBe(false);
+    });
+
+    it('returns an error when a non-host tries to set up the next round', async () => {
+      const { roomCode, playerBId } = await startTwoPlayerGame();
+      const room = app.rooms.get(roomCode)!;
+      room.status = 'finished';
+      room.game!.winnerPlayerId = playerBId;
+      app.rooms.set(roomCode, room);
+
+      const response = await emit<PlayerData>(socketB, 'game:new-round', {
+        roomCode,
+        playerId: playerBId
+      });
+
+      expect(response.ok).toBe(false);
+      if (response.ok) return;
+      expect(response.error).toMatch(/host/i);
+    });
+  });
+
   async function startTwoPlayerGame(): Promise<{ roomCode: string; playerAId: string; playerBId: string }> {
     const createdA = await emit<SessionData>(socketA, 'room:create', { playerName: 'Ada' });
     if (!createdA.ok) throw new Error('Could not create room.');

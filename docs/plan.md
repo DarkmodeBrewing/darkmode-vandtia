@@ -28,9 +28,9 @@
 - Split oversized client/server/shared responsibilities by extracting display-label helpers, room/socket registry helpers, and player-card rule helpers so the main App, server factory, and engine stay focused
 - Add a collapsible replay detail panel with action-type filtering so long completed-round summaries stay manageable on small screens
 - Add explicit room leave behavior that removes lobby players, frees their seats for new joiners, and marks active-game leavers disconnected
+- Add a host-controlled new-round setup flow that resets finished games back to the lobby in the same room
 
 ## Next priorities
 
-1. Add a new-round flow after a finished game so the same room can replay without creating a fresh room.
-2. Add deployment/runtime documentation for hosting the client and Socket.IO server together.
-3. Add host-transfer behavior for rooms whose original host leaves permanently.
+1. Add deployment/runtime documentation for hosting the client and Socket.IO server together.
+2. Add host-transfer behavior for rooms whose original host leaves permanently.

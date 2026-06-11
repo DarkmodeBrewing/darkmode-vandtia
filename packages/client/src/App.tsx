@@ -100,6 +100,7 @@ function App() {
   const isMyTurn = room?.game?.currentTurnPlayerId === room?.mePlayerId;
   const isHost = Boolean(me?.isHost);
   const canStart = room?.status === 'lobby' && isHost && room.players.length >= 2 && room.players.every((player) => player.ready);
+  const canSetUpNextRound = room?.status === 'finished' && isHost;
   const controlsDisabled = !connected || sessionRestoreState === 'restoring';
   const readyCount = room?.players.filter((player) => player.ready).length ?? 0;
   const roomStatusLabel = room ? getRoomStatusLabel(room) : null;
@@ -352,6 +353,18 @@ function App() {
                 </button>
               ) : (
                 <span className="host-only-note">Only the host can start the game.</span>
+              )}
+            </section>
+          ) : null}
+
+          {room.status === 'finished' && me ? (
+            <section className="panel action-row">
+              {isHost ? (
+                <button disabled={!canSetUpNextRound} onClick={() => void sendPlayerEvent('game:new-round')} type="button">
+                  Set up next round
+                </button>
+              ) : (
+                <span className="host-only-note">Only the host can set up the next round.</span>
               )}
             </section>
           ) : null}
