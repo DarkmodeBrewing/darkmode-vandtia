@@ -31,9 +31,9 @@
 - Add a host-controlled new-round setup flow that resets finished games back to the lobby in the same room
 - Add deployment/runtime documentation for hosting the client and Socket.IO server together
 - Add host-transfer behavior so a permanent host leave gives host controls to the next connected seated player
+- Add an in-client deployment/runtime configuration checklist showing the Socket.IO server URL, health endpoint, and pre-invite verification reminder
 
 ## Next priorities
 
-1. Add an in-client deployment/runtime configuration checklist so operators can verify the server URL and health endpoint before inviting players.
-2. Add basic server observability beyond `/health`, such as structured room lifecycle logs for create, join, leave, start, finish, and cleanup events.
-3. Consider inactive-turn handling so long-disconnected players do not block active games indefinitely.
+1. Add basic server observability beyond `/health`, such as structured room lifecycle logs for create, join, leave, start, finish, and cleanup events.
+2. Consider inactive-turn handling so long-disconnected players do not block active games indefinitely.

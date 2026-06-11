@@ -69,6 +69,18 @@ describe('App – landing view', () => {
     expect(screen.getByRole('heading', { name: /Status/i })).toBeTruthy();
   });
 
+  it('renders the deployment checklist with server URL and health endpoint', () => {
+    render(<App />);
+
+    expect(screen.getByRole('heading', { name: /Deployment checklist/i })).toBeTruthy();
+    expect(screen.getByText(/Socket server URL:/i)).toBeTruthy();
+    expect(screen.getByText('http://localhost:3001')).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'http://localhost:3001/health' })).toHaveProperty(
+      'href',
+      'http://localhost:3001/health'
+    );
+  });
+
   it('disables the create-room button when name is empty', () => {
     render(<App />);
     const createButton = screen.getByRole('button', { name: /Create a room/i });
