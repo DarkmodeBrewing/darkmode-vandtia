@@ -13,6 +13,7 @@ The current engine rule reference lives in `docs/rules.md`.
 `packages/shared` contains the game model and game rules:
 
 - card creation, sorting, and deck helpers
+- player-card source, selection, sorting, and out-state helpers in `player-cards.ts` so the rules engine can focus on room and turn transitions
 - room, player, game, and view types
 - turn and legality checks for card plays
 - state transitions for start game, card plays, chance draw, pile pickup, replay logging, and win detection
@@ -31,7 +32,7 @@ The current engine rule reference lives in `docs/rules.md`.
 - `game:draw-chance`
 - `game:pickup-pile`
 
-The server logic lives in `packages/server/src/app.ts` as a `createApp` factory that returns the Express server, Socket.IO instance, and the room map loaded from persistent storage. `index.ts` only reads environment variables and calls `createApp`. This split lets tests spin up isolated server instances without touching the real entry point.
+The server logic lives in `packages/server/src/app.ts` as a `createApp` factory that returns the Express server, Socket.IO instance, and the room map loaded from persistent storage. `index.ts` only reads environment variables and calls `createApp`. This split lets tests spin up isolated server instances without touching the real entry point. Room persistence, room-code/seat allocation, connection marking, and socket/player lookup details are contained in `room-registry.ts` so Socket.IO handlers stay focused on event validation and game mutations.
 
 The server stores room snapshots in `packages/server/data/rooms.json` by default, resets persisted players to disconnected on startup, tracks player/socket connections, and pushes room updates to each player with hidden information masked where needed.
 Persistence retention now keeps in-progress rooms for recovery, keeps lobby rooms only while at least one player remains connected, and prunes finished rooms plus fully disconnected lobbies.
@@ -43,6 +44,7 @@ In-progress rooms can be pruned automatically by age when the `ROOM_MAX_IN_PROGR
 
 - follows a mobile-first layout requirement, starting with stacked small-screen flows before expanding to larger breakpoints
 - stores a local player session in browser storage via `session.ts` (`readStoredSession` / `saveSession`)
+- keeps display copy helpers for room status, replay entries, source names, and pile constraints in `labels.ts` instead of embedding them in the main React component
 - reconnects to a saved room session when possible and keeps retrying after socket reconnects
 - shows a status panel for offline recovery, lobby readiness blockers, active-turn guidance, and end-of-round outcomes
 - renders an end-of-round replay summary after a winner is declared so players can review the action sequence
