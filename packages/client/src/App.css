@@ -153,6 +153,10 @@ input {
   background: #7f1d1d;
 }
 
+.host-only-note {
+  color: #cbd5e1;
+}
+
 .info-pill {
   display: inline-flex;
   align-items: center;

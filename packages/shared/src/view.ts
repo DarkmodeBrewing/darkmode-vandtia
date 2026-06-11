@@ -10,7 +10,7 @@ function maskCards(cards: Card[], options: { preserveIds?: boolean } = {}): Card
   }));
 }
 
-function toPlayerView(player: PlayerState, viewerPlayerId: string): PlayerView {
+function toPlayerView(player: PlayerState, viewerPlayerId: string, hostPlayerId: string | null): PlayerView {
   const isMe = player.playerId === viewerPlayerId;
 
   return {
@@ -19,6 +19,7 @@ function toPlayerView(player: PlayerState, viewerPlayerId: string): PlayerView {
     seat: player.seat,
     ready: player.ready,
     connected: player.connected,
+    isHost: player.playerId === hostPlayerId,
     hand: isMe ? player.hand : maskCards(player.hand),
     handCount: player.hand.length,
     faceUp: player.table.faceUp,
@@ -34,11 +35,12 @@ export function toRoomView(room: RoomState, viewerPlayerId: string): RoomView {
     status: room.status,
     locked: room.locked,
     maxPlayers: room.maxPlayers,
+    hostPlayerId: room.hostPlayerId,
     mePlayerId: viewerPlayerId,
     players: room.players
       .slice()
       .sort((left, right) => left.seat - right.seat)
-      .map((player) => toPlayerView(player, viewerPlayerId)),
+      .map((player) => toPlayerView(player, viewerPlayerId, room.hostPlayerId)),
     game: room.game
       ? {
           ...room.game,

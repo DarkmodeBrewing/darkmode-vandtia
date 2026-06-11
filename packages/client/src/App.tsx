@@ -144,7 +144,8 @@ function App() {
   const me = useMemo(() => room?.players.find((player) => player.isMe) ?? null, [room]);
   const actionState = room?.game?.actionState ?? null;
   const isMyTurn = room?.game?.currentTurnPlayerId === room?.mePlayerId;
-  const canStart = room?.status === 'lobby' && room.players.length >= 2 && room.players.every((player) => player.ready);
+  const isHost = Boolean(me?.isHost);
+  const canStart = room?.status === 'lobby' && isHost && room.players.length >= 2 && room.players.every((player) => player.ready);
   const controlsDisabled = !connected || sessionRestoreState === 'restoring';
   const readyCount = room?.players.filter((player) => player.ready).length ?? 0;
   const roomStatusLabel = room ? getRoomStatusLabel(room) : null;
@@ -336,7 +337,7 @@ function App() {
               <span className="info-pill">Phase: {roomStatusLabel}</span>
               <span className="info-pill">Ready: {readyCount}/{room.players.length}</span>
               <span className="info-pill">Seats: {room.players.length}/{room.maxPlayers}</span>
-              {me ? <span className="info-pill">Seat {me.seat}</span> : null}
+              {me ? <span className="info-pill">Seat {me.seat}{isHost ? ' · Host' : ''}</span> : null}
             </div>
             <button className="secondary-button" onClick={clearSavedSession} type="button">
               Leave
@@ -349,7 +350,7 @@ function App() {
               {room.players.map((player) => (
                 <article className={`seat-card ${player.isMe ? 'seat-card--me' : ''}`} key={player.playerId}>
                   <h3>
-                    Seat {player.seat}: {player.name}
+                    Seat {player.seat}: {player.name}{player.isHost ? ' (host)' : ''}
                   </h3>
                   <p>{player.connected ? 'Connected' : 'Disconnected'}</p>
                   <p>{player.ready ? 'Ready' : 'Not ready'}</p>
@@ -366,9 +367,13 @@ function App() {
               <button onClick={() => void sendPlayerEvent('room:toggle-ready', { ready: !me.ready })} type="button">
                 {me.ready ? 'Mark not ready' : 'Mark ready'}
               </button>
-              <button disabled={!canStart} onClick={() => void sendPlayerEvent('game:start')} type="button">
-                Start game
-              </button>
+              {isHost ? (
+                <button disabled={!canStart} onClick={() => void sendPlayerEvent('game:start')} type="button">
+                  Start game
+                </button>
+              ) : (
+                <span className="host-only-note">Only the host can start the game.</span>
+              )}
             </section>
           ) : null}
 

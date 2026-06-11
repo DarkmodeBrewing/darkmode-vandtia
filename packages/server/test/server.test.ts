@@ -302,6 +302,37 @@ describe('server socket events', () => {
       });
       expect(response.ok).toBe(false);
     });
+
+
+    it('returns an error when a non-host tries to start the game', async () => {
+      const createdA = await emit<SessionData>(socketA, 'room:create', { playerName: 'Ada' });
+      expect(createdA.ok).toBe(true);
+      if (!createdA.ok) return;
+
+      const joinedB = await emit<SessionData>(socketB, 'room:join', {
+        playerName: 'Bea',
+        roomCode: createdA.data.roomCode
+      });
+      expect(joinedB.ok).toBe(true);
+      if (!joinedB.ok) return;
+
+      await emit<PlayerData>(socketA, 'room:toggle-ready', {
+        roomCode: createdA.data.roomCode,
+        playerId: createdA.data.playerId
+      });
+      await emit<PlayerData>(socketB, 'room:toggle-ready', {
+        roomCode: createdA.data.roomCode,
+        playerId: joinedB.data.playerId
+      });
+
+      const response = await emit<PlayerData>(socketB, 'game:start', {
+        roomCode: createdA.data.roomCode,
+        playerId: joinedB.data.playerId
+      });
+      expect(response.ok).toBe(false);
+      if (response.ok) return;
+      expect(response.error).toMatch(/host/i);
+    });
   });
 
   async function startTwoPlayerGame(): Promise<{ roomCode: string; playerAId: string; playerBId: string }> {

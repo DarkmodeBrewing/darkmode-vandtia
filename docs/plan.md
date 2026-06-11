@@ -24,11 +24,12 @@
 - Add face-down card blind reveal with hidden owner views, preserved selectable card ids, and pickup penalty for illegal reveals
 - Add end-of-round replay summary that records plays, burns, chance draws, pickups, and illegal face-down reveal penalties, then renders the completed sequence after a round finishes
 - Add configurable room capacity so hosts can set a room to two or three players
+- Add host-only lobby controls so only the room creator can start games and future room-level settings have an authority anchor
 
 ## Next priorities
 
 1. Add a replay detail drawer/filter if completed-round summaries become too long on small screens.
-2. Add host-only lobby controls so non-host players cannot start games or change future room-level settings.
-3. Add explicit room-leave/reseat behavior instead of only clearing the local saved session.
-4. Add a new-round flow after a finished game so the same room can replay without creating a fresh room.
-5. Add deployment/runtime documentation for hosting the client and Socket.IO server together.
+2. Add explicit room-leave/reseat behavior instead of only clearing the local saved session.
+3. Add a new-round flow after a finished game so the same room can replay without creating a fresh room.
+4. Add deployment/runtime documentation for hosting the client and Socket.IO server together.
+5. Add host-transfer behavior for rooms whose original host leaves permanently.

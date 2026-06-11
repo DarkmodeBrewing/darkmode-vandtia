@@ -104,7 +104,7 @@ export function getStatusSummary({ connected, room, sessionRestoreState, session
       return {
         tone: 'success',
         title: 'Everyone is ready.',
-        detail: 'The game can be started as soon as someone presses Start game.',
+        detail: me?.isHost ? 'Start the game when everyone is ready.' : 'The host can start the game when everyone is ready.',
         bullets: [`${readyPlayers}/${room.players.length} joined players are ready.`]
       };
     }
@@ -113,7 +113,7 @@ export function getStatusSummary({ connected, room, sessionRestoreState, session
       tone: me?.ready ? 'info' : 'warning',
       title: me?.ready ? 'Waiting on ready checks.' : 'You still need to ready up.',
       detail: waitingPlayers.length === 1 ? `${waitingPlayers[0]} is not ready yet.` : `${waitingPlayers.join(', ')} are not ready yet.`,
-      bullets: [`${readyPlayers}/${room.players.length} joined players are ready.`, 'The game starts once every joined player is marked ready.']
+      bullets: [`${readyPlayers}/${room.players.length} joined players are ready.`, me?.isHost ? 'You can start once every joined player is marked ready.' : 'The host can start once every joined player is marked ready.']
     };
   }
 

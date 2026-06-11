@@ -13,7 +13,8 @@ import { createRoomStore } from '../src/storage';
 function makeInProgressRoom(roomCode: string, startedAt: string): RoomState {
   return {
     roomCode,
-    maxPlayers: 4,
+    maxPlayers: 3,
+    hostPlayerId: 'player-1',
     status: 'in_progress',
     locked: true,
     players: [
