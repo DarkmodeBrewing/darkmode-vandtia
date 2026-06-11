@@ -1,12 +1,24 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { io, type Socket } from 'socket.io-client';
-import type { Card, RoomView } from '@darkmode-vandtia/shared';
+import type { Card, ReplayEntryType, RoomView, RoundReplayEntry } from '@darkmode-vandtia/shared';
 import { getMinimumRankLabel, getReplayEntryText, getRoomStatusLabel } from './labels';
 import { readStoredSession, saveSession, type PlayerSession, type SessionState } from './session';
 import { getStatusSummary, type SessionRestoreState } from './status';
 import './App.css';
 
 type AckResponse<T> = { ok: true; data: T } | { ok: false; error: string };
+type ReplayFilter = 'all' | ReplayEntryType;
+
+const replayFilters: { value: ReplayFilter; label: string }[] = [
+  { value: 'all', label: 'All actions' },
+  { value: 'play', label: 'Played cards' },
+  { value: 'burn', label: 'Burns' },
+  { value: 'chance_draw', label: 'Chance draws' },
+  { value: 'pickup', label: 'Pickups' },
+  { value: 'illegal_reveal', label: 'Reveal penalties' }
+];
+
+const emptyReplayEntries: RoundReplayEntry[] = [];
 
 const serverUrl = import.meta.env.VITE_SERVER_URL ?? 'http://localhost:3001';
 
@@ -23,6 +35,8 @@ function App() {
   const [sessionRestoreState, setSessionRestoreState] = useState<SessionRestoreState>(() =>
     readStoredSession() ? 'restoring' : 'idle'
   );
+  const [isReplayOpen, setIsReplayOpen] = useState(false);
+  const [replayFilter, setReplayFilter] = useState<ReplayFilter>('all');
   const sessionRef = useRef<SessionState>(session);
 
   useEffect(() => {
@@ -98,6 +112,11 @@ function App() {
         sessionRoomCode: session?.roomCode ?? null
       }),
     [connected, room, session?.roomCode, sessionRestoreState]
+  );
+  const replayEntries = room?.game?.replay ?? emptyReplayEntries;
+  const filteredReplayEntries = useMemo(
+    () => (replayFilter === 'all' ? replayEntries : replayEntries.filter((entry) => entry.type === replayFilter)),
+    [replayEntries, replayFilter]
   );
 
   async function emitAck<TPayload extends object, TResult extends PlayerSession | { roomCode: string; playerId: string }>(
@@ -332,20 +351,52 @@ function App() {
                 ) : null}
               </section>
 
-              {room.status === 'finished' && room.game.replay && room.game.replay.length > 0 ? (
+              {room.status === 'finished' && replayEntries.length > 0 ? (
                 <section className="panel replay-panel">
                   <div className="section-heading">
                     <h2>Round replay</h2>
-                    <span>{room.game.replay.length} actions</span>
+                    <span>{replayEntries.length} actions</span>
                   </div>
-                  <ol className="replay-list">
-                    {room.game.replay.map((entry) => (
-                      <li key={entry.id}>
-                        <span className="replay-list__sequence">#{entry.sequence}</span>
-                        <span>{getReplayEntryText(entry)}</span>
-                      </li>
-                    ))}
-                  </ol>
+                  <div className="replay-toolbar">
+                    <button
+                      aria-expanded={isReplayOpen}
+                      className="secondary-button"
+                      onClick={() => setIsReplayOpen((current) => !current)}
+                      type="button"
+                    >
+                      {isReplayOpen ? 'Hide replay details' : 'Show replay details'}
+                    </button>
+                    <label className="replay-filter">
+                      Filter
+                      <select
+                        aria-label="Replay action filter"
+                        onChange={(event) => setReplayFilter(event.target.value as ReplayFilter)}
+                        value={replayFilter}
+                      >
+                        {replayFilters.map((filter) => (
+                          <option key={filter.value} value={filter.value}>
+                            {filter.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+                  {isReplayOpen ? (
+                    filteredReplayEntries.length > 0 ? (
+                      <ol className="replay-list">
+                        {filteredReplayEntries.map((entry) => (
+                          <li key={entry.id}>
+                            <span className="replay-list__sequence">#{entry.sequence}</span>
+                            <span>{getReplayEntryText(entry)}</span>
+                          </li>
+                        ))}
+                      </ol>
+                    ) : (
+                      <p className="replay-summary">No replay actions match this filter.</p>
+                    )
+                  ) : (
+                    <p className="replay-summary">Open replay details to review or filter the completed round sequence.</p>
+                  )}
                 </section>
               ) : null}
 

@@ -425,7 +425,8 @@ describe('App – replay summary', () => {
     cleanup();
   });
 
-  it('renders the completed round replay after the game finishes', async () => {
+  it('renders the completed round replay in a collapsible, filterable detail panel after the game finishes', async () => {
+    const user = userEvent.setup();
     render(<App />);
     await emit('connect');
     await emit('room:update', {
@@ -513,7 +514,17 @@ describe('App – replay summary', () => {
 
     expect(screen.getByRole('heading', { name: /Round replay/i })).toBeTruthy();
     expect(screen.getByText(/2 actions/i)).toBeTruthy();
+    expect(screen.getByText(/Open replay details/i)).toBeTruthy();
+    expect(screen.queryByText(/Ada played 5♣ from hand/i)).toBeNull();
+
+    await user.click(screen.getByRole('button', { name: /Show replay details/i }));
+
     expect(screen.getByText(/Ada played 5♣ from hand/i)).toBeTruthy();
+    expect(screen.getByText(/Bea picked up 1 pile card/i)).toBeTruthy();
+
+    await user.selectOptions(screen.getByLabelText(/Replay action filter/i), 'pickup');
+
+    expect(screen.queryByText(/Ada played 5♣ from hand/i)).toBeNull();
     expect(screen.getByText(/Bea picked up 1 pile card/i)).toBeTruthy();
   });
 });
