@@ -470,10 +470,90 @@ describe('App – replay summary', () => {
     socketListeners.clear();
     mockSocket.emit.mockReset();
     localStorage.clear();
+    localStorage.setItem('darkmode-vandtia-session', JSON.stringify({ roomCode: 'TEST02', playerId: 'me', sessionId: 'session-me' }));
   });
 
   afterEach(() => {
     cleanup();
+  });
+
+  it('lets the host request next-round setup after a game finishes', async () => {
+    const user = userEvent.setup();
+    mockSocket.emit.mockImplementation((event: string, _payload: unknown, ack?: (response: unknown) => void) => {
+      if (event === 'room:sync') {
+        ack?.({ ok: true, data: { roomCode: 'TEST02', playerId: 'me', sessionId: 'session-me' } });
+      }
+
+      if (event === 'game:new-round') {
+        ack?.({ ok: true, data: { roomCode: 'TEST02', playerId: 'me' } });
+      }
+    });
+
+    render(<App />);
+    await emit('connect');
+    await emit('room:update', {
+      roomCode: 'TEST02',
+      status: 'finished',
+      locked: true,
+      maxPlayers: 3,
+      hostPlayerId: 'me',
+      mePlayerId: 'me',
+      players: [
+        {
+          playerId: 'me',
+          name: 'Ada',
+          seat: 1,
+          ready: true,
+          connected: true,
+          isHost: true,
+          hand: [],
+          handCount: 0,
+          faceUp: [],
+          faceDown: [],
+          faceDownCount: 0,
+          isMe: true
+        },
+        {
+          playerId: 'other',
+          name: 'Bea',
+          seat: 2,
+          ready: true,
+          connected: true,
+          isHost: false,
+          hand: [],
+          handCount: 1,
+          faceUp: [],
+          faceDown: [],
+          faceDownCount: 0,
+          isMe: false
+        }
+      ],
+      game: {
+        drawPile: [],
+        activePile: [],
+        discardedPile: [],
+        currentTurnPlayerId: 'me',
+        winnerPlayerId: 'me',
+        turn: {
+          playerId: 'me',
+          drewChanceCard: false,
+          availableSource: 'hand'
+        },
+        startedAt: new Date().toISOString(),
+        replay: [],
+        drawPileCount: 0,
+        discardedPileCount: 0,
+        actionState: null
+      }
+    });
+
+    await user.click(screen.getByRole('button', { name: /Set up next round/i }));
+
+    expect(mockSocket.emit).toHaveBeenLastCalledWith(
+      'game:new-round',
+      { roomCode: 'TEST02', playerId: 'me' },
+      expect.any(Function)
+    );
   });
 
   it('renders the completed round replay in a collapsible, filterable detail panel after the game finishes', async () => {

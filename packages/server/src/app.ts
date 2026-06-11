@@ -12,6 +12,7 @@ import {
   pickupPile,
   playCard,
   removePlayerFromRoom,
+  resetFinishedGameToLobby,
   normalizeRoomMaxPlayers,
   startGame,
   toRoomView,
@@ -236,6 +237,16 @@ export function createApp(clientOrigin: string, options: CreateAppOptions = {}):
         }
 
         return startGame(room);
+      });
+    });
+
+    socket.on('game:new-round', (payload: PlayerPayload, ack: Ack<{ roomCode: string; playerId: string }>) => {
+      handleMutation(socket.id, payload, ack, (room) => {
+        if (room.hostPlayerId !== payload.playerId) {
+          throw new Error('Only the room host can set up the next round.');
+        }
+
+        return resetFinishedGameToLobby(room);
       });
     });
 

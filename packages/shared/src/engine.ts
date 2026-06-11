@@ -172,6 +172,26 @@ export function removePlayerFromRoom(room: RoomState, playerId: string): RoomSta
   return nextRoom;
 }
 
+export function resetFinishedGameToLobby(room: RoomState): RoomState {
+  if (room.status !== 'finished' || !room.game) {
+    throw new Error('Only finished games can be reset for a new round.');
+  }
+
+  const nextRoom = cloneRoom(room);
+  nextRoom.status = 'lobby';
+  nextRoom.locked = false;
+  nextRoom.game = null;
+
+  for (const player of nextRoom.players) {
+    player.ready = false;
+    player.hand = [];
+    player.table.faceUp = [];
+    player.table.faceDown = [];
+  }
+
+  return nextRoom;
+}
+
 export function canStartGame(room: RoomState): boolean {
   return room.status === 'lobby' && room.players.length >= ROOM_MIN_PLAYERS && room.players.every((player) => player.ready);
 }

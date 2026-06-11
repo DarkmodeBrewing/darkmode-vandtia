@@ -57,7 +57,8 @@ This document records the exact rule interpretation currently enforced by the sh
 - If no legal play remains, or if the player had no legal play and could not draw a chance card, they must pick up the active pile.
 - Picking up the pile adds every active-pile card to that player's hand, sorts the hand, clears the pile, and ends the turn immediately.
 
-## Winning
+## Winning and next rounds
 
 - A player wins as soon as they have no hand cards, no face-up table cards, and no face-down table cards after completing a legal play.
 - When that happens, the room moves to the finished state and no further turns are taken.
+- After a finished game, the host can set up the next round in the same room. This returns the room to the lobby, clears the previous deal from every player, clears ready checks, and keeps the same room code and seats.

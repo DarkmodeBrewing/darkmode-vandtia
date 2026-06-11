@@ -11,6 +11,7 @@ import {
   pickupPile,
   playCard,
   removePlayerFromRoom,
+  resetFinishedGameToLobby,
   startGame,
   toRoomView,
   type Card,
@@ -72,6 +73,27 @@ describe('shared game engine', () => {
 
     expect(room.hostPlayerId).toBe('player-2');
     expect(beaView?.isHost).toBe(true);
+  });
+
+  it('resets a finished game to the lobby for another round', () => {
+    let room = createLobby(['Ada', 'Bea']);
+    room = startGame(room, {
+      deck: deckFromSpecs([
+        [9, suits[0]], [9, suits[1]], [8, suits[0]], [8, suits[1]], [7, suits[0]], [7, suits[1]],
+        [11, suits[0]], [11, suits[1]], [12, suits[0]], [12, suits[1]], [13, suits[0]], [13, suits[1]],
+        [3, suits[0]], [4, suits[0]], [14, suits[0]], [5, suits[0]], [6, suits[0]], [10, suits[0]]
+      ])
+    });
+    room.status = 'finished';
+    room.game!.winnerPlayerId = 'player-1';
+
+    const lobby = resetFinishedGameToLobby(room);
+
+    expect(lobby.status).toBe('lobby');
+    expect(lobby.locked).toBe(false);
+    expect(lobby.game).toBeNull();
+    expect(lobby.players.every((player) => !player.ready)).toBe(true);
+    expect(lobby.players.every((player) => player.hand.length === 0 && player.table.faceUp.length === 0 && player.table.faceDown.length === 0)).toBe(true);
   });
 
   it('selects the starting player by the lowest hand card', () => {

@@ -135,7 +135,7 @@ export function getStatusSummary({ connected, room, sessionRestoreState, session
       tone: 'success',
       title: 'Game finished.',
       detail: winner ? `${winner} cleared every card and won the round.` : 'The round has ended.',
-      bullets: ['Leave the saved session when you are ready to start over in a new room.']
+      bullets: [me?.isHost ? 'Set up the next round to bring everyone back to the lobby.' : 'Wait for the host to set up the next round, or leave when you are done.']
     };
   }
 
