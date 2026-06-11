@@ -1,8 +1,9 @@
 import { createStandardDeck, shuffleDeck, sortCardsAscending } from './cards';
 import type { Card, CardRank, CardSource, PlayerActionState, PlayerState, RoomState, RoundReplayEntry } from './types';
 
-const MAX_PLAYERS = 4;
-const MIN_PLAYERS = 2;
+export const ROOM_MIN_PLAYERS = 2;
+export const ROOM_MAX_PLAYERS = 3;
+export const DEFAULT_ROOM_MAX_PLAYERS = ROOM_MAX_PLAYERS;
 const CARDS_PER_ZONE = 3;
 const CARDS_PER_PLAYER = CARDS_PER_ZONE * 3;
 
@@ -48,10 +49,22 @@ function sortPlayerCards(player: PlayerState): void {
   player.table.faceDown = sortCardsAscending(player.table.faceDown);
 }
 
-export function createRoomState(roomCode: string): RoomState {
+export function normalizeRoomMaxPlayers(maxPlayers: number | undefined): number {
+  if (maxPlayers === undefined) {
+    return DEFAULT_ROOM_MAX_PLAYERS;
+  }
+
+  if (!Number.isInteger(maxPlayers) || maxPlayers < ROOM_MIN_PLAYERS || maxPlayers > ROOM_MAX_PLAYERS) {
+    throw new Error(`Room capacity must be between ${ROOM_MIN_PLAYERS} and ${ROOM_MAX_PLAYERS} players.`);
+  }
+
+  return maxPlayers;
+}
+
+export function createRoomState(roomCode: string, options: { maxPlayers?: number } = {}): RoomState {
   return {
     roomCode,
-    maxPlayers: MAX_PLAYERS,
+    maxPlayers: normalizeRoomMaxPlayers(options.maxPlayers),
     status: 'lobby',
     locked: false,
     players: [],
@@ -174,7 +187,7 @@ export function addPlayerToRoom(room: RoomState, player: PlayerState): RoomState
 }
 
 export function canStartGame(room: RoomState): boolean {
-  return room.status === 'lobby' && room.players.length >= MIN_PLAYERS && room.players.every((player) => player.ready);
+  return room.status === 'lobby' && room.players.length >= ROOM_MIN_PLAYERS && room.players.every((player) => player.ready);
 }
 
 export function startGame(room: RoomState, options?: { deck?: Card[] }): RoomState {

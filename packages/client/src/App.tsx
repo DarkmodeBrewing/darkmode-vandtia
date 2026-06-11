@@ -76,6 +76,7 @@ function App() {
   const [session, setSession] = useState<SessionState>(() => readStoredSession());
   const [name, setName] = useState('');
   const [roomCode, setRoomCode] = useState('');
+  const [maxPlayers, setMaxPlayers] = useState(3);
   const [error, setError] = useState<string | null>(null);
   const [connected, setConnected] = useState(false);
   const [needsSync, setNeedsSync] = useState(() => Boolean(readStoredSession()));
@@ -177,9 +178,10 @@ function App() {
 
   async function createRoom() {
     setError(null);
-    const response = await emitAck<{ playerName: string; sessionId?: string }, PlayerSession>('room:create', {
+    const response = await emitAck<{ playerName: string; sessionId?: string; maxPlayers: number }, PlayerSession>('room:create', {
       playerName: name,
-      sessionId: session?.sessionId
+      sessionId: session?.sessionId,
+      maxPlayers
     });
 
     if (!response.ok) {
@@ -301,6 +303,13 @@ function App() {
 
           <div className="panel action-panel">
             <h2>Create room</h2>
+            <label>
+              Room capacity
+              <select aria-label="Room capacity" onChange={(event) => setMaxPlayers(Number(event.target.value))} value={maxPlayers}>
+                <option value={2}>2 players</option>
+                <option value={3}>3 players</option>
+              </select>
+            </label>
             <button disabled={!name.trim() || controlsDisabled} onClick={() => void createRoom()} type="button">
               Create a room
             </button>
@@ -326,6 +335,7 @@ function App() {
             <div className="info-pill-row">
               <span className="info-pill">Phase: {roomStatusLabel}</span>
               <span className="info-pill">Ready: {readyCount}/{room.players.length}</span>
+              <span className="info-pill">Seats: {room.players.length}/{room.maxPlayers}</span>
               {me ? <span className="info-pill">Seat {me.seat}</span> : null}
             </div>
             <button className="secondary-button" onClick={clearSavedSession} type="button">

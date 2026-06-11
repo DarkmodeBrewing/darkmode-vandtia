@@ -4,7 +4,7 @@ This document records the exact rule interpretation currently enforced by the sh
 
 ## Lobby and setup
 
-- A room supports up to four players.
+- A room supports the host-selected capacity: two or three players.
 - A game can only start from the lobby once at least two players have joined and every joined player is marked ready.
 - When the game starts, each player is dealt:
   - 3 face-down table cards

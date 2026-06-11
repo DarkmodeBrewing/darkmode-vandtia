@@ -11,6 +11,7 @@ import {
   drawChanceCard,
   pickupPile,
   playCard,
+  normalizeRoomMaxPlayers,
   startGame,
   toRoomView,
   type RoomState
@@ -23,6 +24,7 @@ interface SessionPayload {
   playerName?: string;
   roomCode?: string;
   sessionId?: string;
+  maxPlayers?: number;
 }
 
 interface PlayerPayload {
@@ -186,7 +188,8 @@ export function createApp(clientOrigin: string, options: CreateAppOptions = {}):
         const roomCode = generateRoomCode();
         const playerId = randomUUID();
         const sessionId = payload.sessionId?.trim() || randomUUID();
-        const room = createRoomState(roomCode);
+        const maxPlayers = normalizeRoomMaxPlayers(payload.maxPlayers);
+        const room = createRoomState(roomCode, { maxPlayers });
         const nextRoom = setRoom(addPlayerToRoom(room, createEmptyPlayerState(playerId, sessionId, playerName, getNextSeat(room))));
         attachPlayer(socket.id, nextRoom, playerId);
         ack({ ok: true, data: { roomCode, playerId, sessionId } });
@@ -214,6 +217,10 @@ export function createApp(clientOrigin: string, options: CreateAppOptions = {}):
             ack({ ok: true, data: { roomCode, playerId: existingPlayer.playerId, sessionId: incomingSessionId } });
             return;
           }
+        }
+
+        if (room.players.length >= room.maxPlayers) {
+          throw new Error('The room is already full.');
         }
 
         const sessionId = randomUUID();
