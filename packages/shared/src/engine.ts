@@ -151,6 +151,27 @@ export function addPlayerToRoom(room: RoomState, player: PlayerState): RoomState
   return nextRoom;
 }
 
+
+export function removePlayerFromRoom(room: RoomState, playerId: string): RoomState {
+  if (room.status !== 'lobby' || room.locked) {
+    throw new Error('Players can only leave open lobby rooms.');
+  }
+
+  if (!room.players.some((player) => player.playerId === playerId)) {
+    throw new Error('Player not found.');
+  }
+
+  const nextRoom = cloneRoom(room);
+  nextRoom.players = nextRoom.players.filter((player) => player.playerId !== playerId);
+
+  if (nextRoom.hostPlayerId === playerId) {
+    nextRoom.hostPlayerId = nextRoom.players[0]?.playerId ?? null;
+  }
+
+  nextRoom.players.sort((left, right) => left.seat - right.seat);
+  return nextRoom;
+}
+
 export function canStartGame(room: RoomState): boolean {
   return room.status === 'lobby' && room.players.length >= ROOM_MIN_PLAYERS && room.players.every((player) => player.ready);
 }

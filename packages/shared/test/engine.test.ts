@@ -10,6 +10,7 @@ import {
   getTopConstraintRank,
   pickupPile,
   playCard,
+  removePlayerFromRoom,
   startGame,
   toRoomView,
   type Card,
@@ -49,6 +50,28 @@ describe('shared game engine', () => {
     room = addPlayerToRoom(room, createEmptyPlayerState('player-2', 'session-2', 'Bea', 2));
 
     expect(() => addPlayerToRoom(room, createEmptyPlayerState('player-3', 'session-3', 'Cal', 3))).toThrow(/full/i);
+  });
+
+  it('removes a lobby player and keeps their seat available for the next joiner', () => {
+    let room = createLobby(['Ada', 'Bea', 'Cal']);
+
+    room = removePlayerFromRoom(room, 'player-2');
+
+    expect(room.players.map((player) => player.name)).toEqual(['Ada', 'Cal']);
+    expect(room.players.map((player) => player.seat)).toEqual([1, 3]);
+    expect(room.hostPlayerId).toBe('player-1');
+
+    room = addPlayerToRoom(room, createEmptyPlayerState('player-4', 'session-4', 'Dee', 2));
+
+    expect(room.players.map((player) => `${player.seat}:${player.name}`)).toEqual(['1:Ada', '2:Dee', '3:Cal']);
+  });
+
+  it('passes lobby host status to the next seated player when the host leaves', () => {
+    const room = removePlayerFromRoom(createLobby(['Ada', 'Bea']), 'player-1');
+    const beaView = toRoomView(room, 'player-2').players[0];
+
+    expect(room.hostPlayerId).toBe('player-2');
+    expect(beaView?.isHost).toBe(true);
   });
 
   it('selects the starting player by the lowest hand card', () => {

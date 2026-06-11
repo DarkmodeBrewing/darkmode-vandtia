@@ -47,14 +47,22 @@ export class RoomRegistry {
     throw new Error('No seats are available in this room.');
   }
 
+  private replaceRooms(rooms: Map<string, RoomState>): void {
+    this.rooms.clear();
+    for (const [roomCode, room] of rooms.entries()) {
+      this.rooms.set(roomCode, room);
+    }
+  }
+
   saveRoom(room: RoomState): RoomState {
     this.rooms.set(room.roomCode, room);
-    const persistedRooms = this.roomStore.saveRooms(this.rooms);
-    this.rooms.clear();
-    for (const [roomCode, persistedRoom] of persistedRooms.entries()) {
-      this.rooms.set(roomCode, persistedRoom);
-    }
+    this.replaceRooms(this.roomStore.saveRooms(this.rooms));
     return this.rooms.get(room.roomCode) ?? room;
+  }
+
+  deleteRoom(roomCode: string): void {
+    this.rooms.delete(roomCode.toUpperCase());
+    this.replaceRooms(this.roomStore.saveRooms(this.rooms));
   }
 
   setPlayerSocket(roomCode: string, playerId: string, socketId: string): void {

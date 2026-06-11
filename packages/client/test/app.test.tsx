@@ -170,6 +170,57 @@ describe('App – lobby view', () => {
     expect(screen.getByText(/Seat 1: Ada/i)).toBeTruthy();
   });
 
+  it('sends an explicit leave-room event before clearing the active room', async () => {
+    const user = userEvent.setup();
+    localStorage.setItem('darkmode-vandtia-session', JSON.stringify({ roomCode: 'TEST01', playerId: 'me', sessionId: 'session-me' }));
+    mockSocket.emit.mockImplementation((event: string, _payload: unknown, ack?: (response: unknown) => void) => {
+      if (event === 'room:sync') {
+        ack?.({ ok: true, data: { roomCode: 'TEST01', playerId: 'me', sessionId: 'session-me' } });
+      }
+
+      if (event === 'room:leave') {
+        ack?.({ ok: true, data: { roomCode: 'TEST01', playerId: 'me' } });
+      }
+    });
+
+    render(<App />);
+    await emit('connect');
+    await emit('room:update', {
+      roomCode: 'TEST01',
+      status: 'lobby',
+      locked: false,
+      maxPlayers: 3,
+      hostPlayerId: 'me',
+      mePlayerId: 'me',
+      players: [
+        {
+          playerId: 'me',
+          name: 'Ada',
+          seat: 1,
+          ready: false,
+          connected: true,
+          isHost: true,
+          hand: [],
+          handCount: 0,
+          faceUp: [],
+          faceDown: [],
+          faceDownCount: 0,
+          isMe: true
+        }
+      ],
+      game: null
+    });
+
+    await user.click(screen.getByRole('button', { name: /Leave room/i }));
+
+    expect(mockSocket.emit).toHaveBeenLastCalledWith(
+      'room:leave',
+      { roomCode: 'TEST01', playerId: 'me' },
+      expect.any(Function)
+    );
+    expect(screen.getByRole('heading', { name: /Create room/i })).toBeTruthy();
+  });
+
   it('renders ready and start-game buttons in the lobby', async () => {
     render(<App />);
     await emit('connect');

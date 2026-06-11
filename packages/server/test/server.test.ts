@@ -222,6 +222,68 @@ describe('server socket events', () => {
     });
   });
 
+  describe('room:leave', () => {
+    it('removes a lobby player and frees their seat for the next joiner', async () => {
+      const created = await emit<SessionData>(socketA, 'room:create', { playerName: 'Ada' });
+      expect(created.ok).toBe(true);
+      if (!created.ok) return;
+
+      const joined = await emit<SessionData>(socketB, 'room:join', {
+        playerName: 'Bea',
+        roomCode: created.data.roomCode
+      });
+      expect(joined.ok).toBe(true);
+      if (!joined.ok) return;
+
+      const left = await emit<PlayerData>(socketB, 'room:leave', {
+        roomCode: created.data.roomCode,
+        playerId: joined.data.playerId
+      });
+      expect(left.ok).toBe(true);
+      expect(app.rooms.get(created.data.roomCode)?.players.map((player) => player.name)).toEqual(['Ada']);
+
+      const socketC = await connect(getPort(app));
+      try {
+        const rejoined = await emit<SessionData>(socketC, 'room:join', {
+          playerName: 'Cal',
+          roomCode: created.data.roomCode
+        });
+        expect(rejoined.ok).toBe(true);
+        expect(app.rooms.get(created.data.roomCode)?.players.map((player) => `${player.seat}:${player.name}`)).toEqual(['1:Ada', '2:Cal']);
+      } finally {
+        socketC.disconnect();
+      }
+    });
+
+    it('removes an empty lobby room after the last player leaves', async () => {
+      const created = await emit<SessionData>(socketA, 'room:create', { playerName: 'Ada' });
+      expect(created.ok).toBe(true);
+      if (!created.ok) return;
+
+      const left = await emit<PlayerData>(socketA, 'room:leave', {
+        roomCode: created.data.roomCode,
+        playerId: created.data.playerId
+      });
+
+      expect(left.ok).toBe(true);
+      expect(app.rooms.has(created.data.roomCode)).toBe(false);
+    });
+
+    it('marks an in-progress player disconnected instead of removing their cards', async () => {
+      const { roomCode, playerAId } = await startTwoPlayerGame();
+
+      const left = await emit<PlayerData>(socketA, 'room:leave', {
+        roomCode,
+        playerId: playerAId
+      });
+      expect(left.ok).toBe(true);
+
+      const player = app.rooms.get(roomCode)?.players.find((entry) => entry.playerId === playerAId);
+      expect(player?.connected).toBe(false);
+      expect(player?.hand.length).toBeGreaterThan(0);
+    });
+  });
+
   describe('room:toggle-ready', () => {
     it('toggles a player ready state', async () => {
       const created = await emit<SessionData>(socketA, 'room:create', { playerName: 'Ada' });
