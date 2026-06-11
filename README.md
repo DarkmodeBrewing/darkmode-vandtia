@@ -21,7 +21,7 @@ A multiplayer Vändtia prototype built as a TypeScript workspace with a shared r
 - Start a game once all joined players are ready
 - Play hand, face-up, and face-down cards using shared Vändtia rules
 - Draw a chance card or pick up the pile when blocked
-- Reveal the current turn, pile state, winner, and context-aware action guidance in the client
+- Reveal the current turn, pile state, winner, context-aware action guidance, and a completed-round replay in the client
 - Use a mobile-first client layout that keeps room controls, turn state, and cards usable on small screens before expanding to larger viewports
 
 ## Hard requirement

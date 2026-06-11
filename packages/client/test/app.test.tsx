@@ -331,3 +331,104 @@ describe('App – face-down gameplay', () => {
     );
   });
 });
+
+describe('App – replay summary', () => {
+  beforeEach(() => {
+    socketListeners.clear();
+    mockSocket.emit.mockReset();
+    localStorage.clear();
+  });
+
+  afterEach(() => {
+    cleanup();
+  });
+
+  it('renders the completed round replay after the game finishes', async () => {
+    render(<App />);
+    await emit('connect');
+    await emit('room:update', {
+      roomCode: 'TEST02',
+      status: 'finished',
+      locked: true,
+      maxPlayers: 4,
+      mePlayerId: 'me',
+      players: [
+        {
+          playerId: 'me',
+          name: 'Ada',
+          seat: 1,
+          ready: true,
+          connected: true,
+          hand: [],
+          handCount: 0,
+          faceUp: [],
+          faceDown: [],
+          faceDownCount: 0,
+          isMe: true
+        },
+        {
+          playerId: 'other',
+          name: 'Bea',
+          seat: 2,
+          ready: true,
+          connected: true,
+          hand: [],
+          handCount: 1,
+          faceUp: [],
+          faceDown: [],
+          faceDownCount: 0,
+          isMe: false
+        }
+      ],
+      game: {
+        drawPile: [],
+        activePile: [],
+        discardedPile: [],
+        currentTurnPlayerId: 'me',
+        winnerPlayerId: 'me',
+        turn: {
+          playerId: 'me',
+          drewChanceCard: false,
+          availableSource: 'hand'
+        },
+        startedAt: new Date().toISOString(),
+        replay: [
+          {
+            id: 'TEST02-1',
+            sequence: 1,
+            type: 'play',
+            playerId: 'me',
+            playerName: 'Ada',
+            source: 'hand',
+            cards: [{ id: 'card-5', rank: 5, suit: 'clubs', label: '5♣' }],
+            pileCards: [],
+            activePileCount: 1,
+            drawPileCount: 0,
+            createdAt: new Date().toISOString()
+          },
+          {
+            id: 'TEST02-2',
+            sequence: 2,
+            type: 'pickup',
+            playerId: 'other',
+            playerName: 'Bea',
+            source: 'hand',
+            cards: [],
+            pileCards: [{ id: 'card-5', rank: 5, suit: 'clubs', label: '5♣' }],
+            activePileCount: 0,
+            drawPileCount: 0,
+            createdAt: new Date().toISOString()
+          }
+        ],
+        drawPileCount: 0,
+        discardedPileCount: 0,
+        actionState: null
+      }
+    });
+
+    expect(screen.getByRole('heading', { name: /Round replay/i })).toBeTruthy();
+    expect(screen.getByText(/2 actions/i)).toBeTruthy();
+    expect(screen.getByText(/Ada played 5♣ from hand/i)).toBeTruthy();
+    expect(screen.getByText(/Bea picked up 1 pile card/i)).toBeTruthy();
+  });
+});
