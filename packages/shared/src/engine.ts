@@ -1,5 +1,5 @@
 import { createStandardDeck, shuffleDeck, sortCardsAscending } from './cards';
-import type { Card, CardRank, CardSource, PlayerActionState, PlayerState, RoomState } from './types';
+import type { Card, CardRank, CardSource, PlayerActionState, PlayerState, RoomState, RoundReplayEntry } from './types';
 
 const MAX_PLAYERS = 4;
 const MIN_PLAYERS = 2;
@@ -124,6 +124,32 @@ function getNextActivePlayerId(room: RoomState, currentPlayerId: string): string
   return alivePlayers[(currentIndex + 1) % alivePlayers.length]!.playerId;
 }
 
+function getReplay(room: RoomState): RoundReplayEntry[] {
+  if (!room.game) {
+    return [];
+  }
+
+  room.game.replay ??= [];
+  return room.game.replay;
+}
+
+function appendReplayEntry(
+  room: RoomState,
+  player: PlayerState,
+  entry: Pick<RoundReplayEntry, 'type' | 'source' | 'cards' | 'pileCards' | 'activePileCount' | 'drawPileCount'>
+): void {
+  const replay = getReplay(room);
+  const sequence = replay.length + 1;
+  replay.push({
+    id: `${room.roomCode}-${sequence}`,
+    sequence,
+    playerId: player.playerId,
+    playerName: player.name,
+    createdAt: new Date().toISOString(),
+    ...entry
+  });
+}
+
 function drawUpToThree(player: PlayerState, drawPile: Card[]): void {
   while (player.hand.length < CARDS_PER_ZONE && drawPile.length > 0) {
     player.hand.push(...takeFromTop(drawPile, 1));
@@ -216,7 +242,8 @@ export function startGame(room: RoomState, options?: { deck?: Card[] }): RoomSta
       drewChanceCard: false,
       availableSource: getAvailableSource(startingPlayer)
     },
-    startedAt: new Date().toISOString()
+    startedAt: new Date().toISOString(),
+    replay: []
   };
 
   return nextRoom;
@@ -306,14 +333,26 @@ export function playCard(room: RoomState, playerId: string, cardId: string): Roo
   game.activePile.push(card);
 
   if (!isLegalPlay) {
-    player.hand.push(...game.activePile);
+    const pileCards = [...game.activePile];
+    player.hand.push(...pileCards);
     player.hand = sortCardsAscending(player.hand);
     game.activePile = [];
+    appendReplayEntry(nextRoom, player, {
+      type: 'illegal_reveal',
+      source,
+      cards: [card],
+      pileCards,
+      activePileCount: 0,
+      drawPileCount: game.drawPile.length
+    });
     return completeTurn(nextRoom, playerId);
   }
 
+  const playedPileCount = game.activePile.length;
+  const burnedCards = card.rank === 10 ? [...game.activePile] : [];
+
   if (card.rank === 10) {
-    game.discardedPile.push(...game.activePile);
+    game.discardedPile.push(...burnedCards);
     game.activePile = [];
   }
 
@@ -322,6 +361,15 @@ export function playCard(room: RoomState, playerId: string, cardId: string): Roo
   } else {
     sortPlayerCards(player);
   }
+
+  appendReplayEntry(nextRoom, player, {
+    type: card.rank === 10 ? 'burn' : 'play',
+    source,
+    cards: [card],
+    pileCards: burnedCards,
+    activePileCount: card.rank === 10 ? 0 : playedPileCount,
+    drawPileCount: game.drawPile.length
+  });
 
   return completeTurn(nextRoom, playerId);
 }
@@ -335,8 +383,17 @@ export function drawChanceCard(room: RoomState, playerId: string): RoomState {
     throw new Error('A chance card cannot be drawn right now.');
   }
 
-  player.hand.push(...takeFromTop(game.drawPile, 1));
+  const drawnCards = takeFromTop(game.drawPile, 1);
+  player.hand.push(...drawnCards);
   sortPlayerCards(player);
+  appendReplayEntry(nextRoom, player, {
+    type: 'chance_draw',
+    source: 'hand',
+    cards: [],
+    pileCards: [],
+    activePileCount: game.activePile.length,
+    drawPileCount: game.drawPile.length
+  });
   game.turn = {
     ...game.turn,
     drewChanceCard: true,
@@ -355,9 +412,18 @@ export function pickupPile(room: RoomState, playerId: string): RoomState {
     throw new Error('The pile cannot be picked up right now.');
   }
 
-  player.hand.push(...game.activePile);
+  const pileCards = [...game.activePile];
+  player.hand.push(...pileCards);
   player.hand = sortCardsAscending(player.hand);
   game.activePile = [];
+  appendReplayEntry(nextRoom, player, {
+    type: 'pickup',
+    source: actionState.availableSource,
+    cards: [],
+    pileCards,
+    activePileCount: 0,
+    drawPileCount: game.drawPile.length
+  });
 
   return completeTurn(nextRoom, playerId);
 }

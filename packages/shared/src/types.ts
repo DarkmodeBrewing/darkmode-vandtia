@@ -35,6 +35,22 @@ export interface TurnState {
   availableSource: CardSource;
 }
 
+export type ReplayEntryType = 'play' | 'illegal_reveal' | 'burn' | 'chance_draw' | 'pickup';
+
+export interface RoundReplayEntry {
+  id: string;
+  sequence: number;
+  type: ReplayEntryType;
+  playerId: string;
+  playerName: string;
+  source: CardSource | null;
+  cards: Card[];
+  pileCards: Card[];
+  activePileCount: number;
+  drawPileCount: number;
+  createdAt: string;
+}
+
 export interface GameState {
   drawPile: Card[];
   activePile: Card[];
@@ -43,6 +59,7 @@ export interface GameState {
   winnerPlayerId: string | null;
   turn: TurnState;
   startedAt: string;
+  replay?: RoundReplayEntry[];
 }
 
 export interface RoomState {

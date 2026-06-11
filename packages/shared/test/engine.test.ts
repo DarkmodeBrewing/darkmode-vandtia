@@ -80,6 +80,15 @@ describe('shared game engine', () => {
 
     expect(room.game?.activePile).toHaveLength(0);
     expect(room.game?.discardedPile).toHaveLength(2);
+    expect(room.game?.replay?.map((entry) => entry.type)).toEqual(['play', 'burn']);
+    expect(room.game?.replay?.[1]).toMatchObject({
+      playerId: 'player-1',
+      playerName: 'Ada',
+      source: 'hand',
+      activePileCount: 0
+    });
+    expect(room.game?.replay?.[1]?.cards.map((card) => card.rank)).toEqual([10]);
+    expect(room.game?.replay?.[1]?.pileCards).toHaveLength(2);
   });
 
   it('draws back up to three cards after a hand play', () => {
@@ -143,11 +152,18 @@ describe('shared game engine', () => {
     const withChance = drawChanceCard(started, 'player-1');
     expect(withChance.players[0]!.hand).toHaveLength(2);
     expect(getPlayerActionState(withChance, 'player-1')?.canPickupPile).toBe(true);
+    expect(withChance.game?.replay?.[0]).toMatchObject({
+      type: 'chance_draw',
+      playerName: 'Ada',
+      drawPileCount: 0
+    });
 
     const afterPickup = pickupPile(withChance, 'player-1');
     expect(afterPickup.players[0]!.hand.map((card) => card.rank)).toEqual([3, 4, 13]);
     expect(afterPickup.game?.activePile).toHaveLength(0);
     expect(afterPickup.game?.currentTurnPlayerId).toBe('player-2');
+    expect(afterPickup.game?.replay?.map((entry) => entry.type)).toEqual(['chance_draw', 'pickup']);
+    expect(afterPickup.game?.replay?.[1]?.pileCards.map((card) => card.rank)).toEqual([13]);
   });
 
   it('moves from hand to face-up then face-down cards when the draw pile is depleted', () => {
@@ -188,7 +204,6 @@ describe('shared game engine', () => {
     expect(afterFaceUp.status).toBe('in_progress');
     expect(getPlayerActionState(afterFaceUp, 'player-1')?.availableSource).toBe('faceDown');
   });
-
 
   it('lets players choose any face-down card without seeing its rank', () => {
     const room = createRoomState('ROOM05');
@@ -319,6 +334,14 @@ describe('shared game engine', () => {
     expect(afterPenalty.game?.activePile).toHaveLength(0);
     expect(afterPenalty.game?.currentTurnPlayerId).toBe('player-2');
     expect(afterPenalty.status).toBe('in_progress');
+    expect(afterPenalty.game?.replay?.[0]).toMatchObject({
+      type: 'illegal_reveal',
+      playerName: 'Ada',
+      source: 'faceDown',
+      activePileCount: 0
+    });
+    expect(afterPenalty.game?.replay?.[0]?.cards.map((card) => card.rank)).toEqual([8]);
+    expect(afterPenalty.game?.replay?.[0]?.pileCards.map((card) => card.rank)).toEqual([9, 8]);
   });
 
   it('detects a winner when a player clears all cards', () => {

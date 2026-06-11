@@ -22,8 +22,9 @@
 - Add operator documentation covering retention configuration, storage behavior, health endpoint, and monitoring expectations
 - Strip client UI to bare minimum: remove hero subtitle, quick-start panel, touch-friendly pill, game-meta stat cards, card-count badges, zone-empty text, and turn-hint spans; fold draw count and minimum-rank constraint inline into the pile panel
 - Add face-down card blind reveal with hidden owner views, preserved selectable card ids, and pickup penalty for illegal reveals
+- Add end-of-round replay summary that records plays, burns, chance draws, pickups, and illegal face-down reveal penalties, then renders the completed sequence after a round finishes
 
 ## Next priorities
 
-1. Add end-of-round replay summary so players can review the sequence of plays after a game finishes.
-2. Add configurable room capacity so hosts can set a room to two or three players instead of the fixed maximum of four.
+1. Add configurable room capacity so hosts can set a room to two or three players instead of the fixed maximum of four.
+2. Add a replay detail drawer/filter if completed-round summaries become too long on small screens.
