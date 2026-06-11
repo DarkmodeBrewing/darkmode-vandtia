@@ -21,6 +21,7 @@ const replayFilters: { value: ReplayFilter; label: string }[] = [
 const emptyReplayEntries: RoundReplayEntry[] = [];
 
 const serverUrl = import.meta.env.VITE_SERVER_URL ?? 'http://localhost:3001';
+const healthEndpointUrl = new URL('/health', new URL(serverUrl, window.location.origin)).toString();
 
 function App() {
   const socket = useMemo<Socket>(() => io(serverUrl, { transports: ['websocket'] }), []);
@@ -271,6 +272,21 @@ function App() {
       </section>
 
       {error ? <section className="panel panel--error">{error}</section> : null}
+
+      {!room ? (
+        <section className="panel deployment-checklist">
+          <div className="section-heading">
+            <h2>Deployment checklist</h2>
+            <span>Before inviting players</span>
+          </div>
+          <ul className="deployment-checklist__items">
+            <li>Socket server URL: <code>{serverUrl}</code></li>
+            <li>Health endpoint: <a href={healthEndpointUrl} rel="noreferrer" target="_blank">{healthEndpointUrl}</a></li>
+            <li>Connection status: {connected ? 'connected to the room server' : 'offline or still connecting'}</li>
+            <li>Open the health endpoint and confirm it reports ok before sharing a room code.</li>
+          </ul>
+        </section>
+      ) : null}
 
       {!room ? (
         <section className="landing-grid">

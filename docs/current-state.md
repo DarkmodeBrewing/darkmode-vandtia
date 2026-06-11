@@ -48,6 +48,7 @@ In-progress rooms can be pruned automatically by age when the `ROOM_MAX_IN_PROGR
 - stores a local player session in browser storage via `session.ts` (`readStoredSession` / `saveSession`)
 - keeps display copy helpers for room status, replay entries, source names, and pile constraints in `labels.ts` instead of embedding them in the main React component
 - reconnects to a saved room session when possible and keeps retrying after socket reconnects
+- shows a deployment checklist on the landing view with the configured Socket.IO server URL, derived `/health` endpoint, connection state, and a pre-invite verification reminder
 - shows a status panel for offline recovery, lobby readiness blockers, active-turn guidance, and end-of-round outcomes
 - renders an end-of-round replay summary after a winner is declared, with a collapsible detail drawer and action-type filter for long rounds
 - shows lobby seats, room capacity, host badges, readiness, and connection state
