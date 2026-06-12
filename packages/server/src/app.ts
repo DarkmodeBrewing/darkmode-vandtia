@@ -19,6 +19,8 @@ import {
   transferHostAfterPermanentLeave,
   type RoomState
 } from '@darkmode-vandtia/shared';
+import { InactiveTurnMonitor } from './inactive-turns.js';
+import { createRoomLifecycleEntry, consoleLifecycleLogger, type LifecycleLogger, type RoomLifecycleLogEntry } from './observability.js';
 import { RoomRegistry } from './room-registry.js';
 import { createRoomStore } from './storage.js';
 
@@ -47,6 +49,8 @@ export interface AppInstance {
 export interface CreateAppOptions {
   roomStoragePath?: string;
   maxInProgressAgeMs?: number;
+  inactiveTurnTimeoutMs?: number;
+  logger?: LifecycleLogger;
 }
 
 export function createApp(clientOrigin: string, options: CreateAppOptions = {}): AppInstance {
@@ -55,6 +59,7 @@ export function createApp(clientOrigin: string, options: CreateAppOptions = {}):
     : {};
   const roomRegistry = new RoomRegistry(createRoomStore(options.roomStoragePath, roomStoreOptions));
   const { rooms } = roomRegistry;
+  const logger = options.logger ?? consoleLifecycleLogger;
 
   const app = express();
   app.use(cors({ origin: clientOrigin }));
@@ -81,9 +86,33 @@ export function createApp(clientOrigin: string, options: CreateAppOptions = {}):
     }
   }
 
+  function logRoomEvent(event: Parameters<typeof createRoomLifecycleEntry>[0], room: RoomState, playerId?: string, reason?: string): void {
+    const details: Pick<RoomLifecycleLogEntry, 'playerId' | 'reason'> = {};
+    if (playerId !== undefined) {
+      details.playerId = playerId;
+    }
+    if (reason !== undefined) {
+      details.reason = reason;
+    }
+    logger.log(createRoomLifecycleEntry(event, room, details));
+  }
+
+  const inactiveTurnOptions = {
+    getRoom: (roomCode: string) => rooms.get(roomCode),
+    saveRoom: (room: RoomState) => roomRegistry.saveRoom(room),
+    emitRoom,
+    logger
+  };
+  const inactiveTurns = new InactiveTurnMonitor(
+    options.inactiveTurnTimeoutMs !== undefined
+      ? { ...inactiveTurnOptions, timeoutMs: options.inactiveTurnTimeoutMs }
+      : inactiveTurnOptions
+  );
+
   function attachPlayer(socketId: string, room: RoomState, playerId: string): RoomState {
     const nextRoom = roomRegistry.markPlayerConnection(room, playerId, true);
     roomRegistry.setPlayerSocket(nextRoom.roomCode, playerId, socketId);
+    inactiveTurns.schedule(nextRoom);
     emitRoom(nextRoom);
     return nextRoom;
   }
@@ -102,6 +131,10 @@ export function createApp(clientOrigin: string, options: CreateAppOptions = {}):
       getPlayerFromRoom(room, payload.playerId);
       const nextRoom = roomRegistry.saveRoom(mutate(room));
       roomRegistry.setPlayerSocket(nextRoom.roomCode, payload.playerId, socketId);
+      if (room.status !== 'finished' && nextRoom.status === 'finished') {
+        logRoomEvent('game_finished', nextRoom, payload.playerId);
+      }
+      inactiveTurns.schedule(nextRoom);
       emitRoom(nextRoom);
       ack({ ok: true, data: { roomCode: nextRoom.roomCode, playerId: payload.playerId } });
     } catch (error) {
@@ -123,7 +156,8 @@ export function createApp(clientOrigin: string, options: CreateAppOptions = {}):
         const maxPlayers = normalizeRoomMaxPlayers(payload.maxPlayers);
         const room = createRoomState(roomCode, { maxPlayers });
         const nextRoom = roomRegistry.saveRoom(addPlayerToRoom(room, createEmptyPlayerState(playerId, sessionId, playerName, roomRegistry.getNextSeat(room))));
-        attachPlayer(socket.id, nextRoom, playerId);
+        const attachedRoom = attachPlayer(socket.id, nextRoom, playerId);
+        logRoomEvent('room_created', attachedRoom, playerId);
         ack({ ok: true, data: { roomCode, playerId, sessionId } });
       } catch (error) {
         ack({ ok: false, error: error instanceof Error ? error.message : 'Unexpected server error.' });
@@ -145,7 +179,8 @@ export function createApp(clientOrigin: string, options: CreateAppOptions = {}):
           const synced = roomRegistry.syncExistingPlayer(room, incomingSessionId);
           if (synced) {
             const existingPlayer = synced.players.find((entry) => entry.sessionId === incomingSessionId)!;
-            attachPlayer(socket.id, synced, existingPlayer.playerId);
+            const attachedRoom = attachPlayer(socket.id, synced, existingPlayer.playerId);
+            logRoomEvent('player_synced', attachedRoom, existingPlayer.playerId);
             ack({ ok: true, data: { roomCode, playerId: existingPlayer.playerId, sessionId: incomingSessionId } });
             return;
           }
@@ -158,7 +193,8 @@ export function createApp(clientOrigin: string, options: CreateAppOptions = {}):
         const sessionId = randomUUID();
         const playerId = randomUUID();
         room = roomRegistry.saveRoom(addPlayerToRoom(room, createEmptyPlayerState(playerId, sessionId, playerName, roomRegistry.getNextSeat(room))));
-        attachPlayer(socket.id, room, playerId);
+        const attachedRoom = attachPlayer(socket.id, room, playerId);
+        logRoomEvent('player_joined', attachedRoom, playerId);
         ack({ ok: true, data: { roomCode, playerId, sessionId } });
       } catch (error) {
         ack({ ok: false, error: error instanceof Error ? error.message : 'Unexpected server error.' });
@@ -181,7 +217,8 @@ export function createApp(clientOrigin: string, options: CreateAppOptions = {}):
         }
 
         const player = syncedRoom.players.find((entry) => entry.sessionId === sessionId)!;
-        attachPlayer(socket.id, syncedRoom, player.playerId);
+        const attachedRoom = attachPlayer(socket.id, syncedRoom, player.playerId);
+        logRoomEvent('player_synced', attachedRoom, player.playerId);
         ack({ ok: true, data: { roomCode, playerId: player.playerId, sessionId } });
       } catch (error) {
         ack({ ok: false, error: error instanceof Error ? error.message : 'Unexpected server error.' });
@@ -201,12 +238,20 @@ export function createApp(clientOrigin: string, options: CreateAppOptions = {}):
           const nextRoom = removePlayerFromRoom(room, payload.playerId);
           if (nextRoom.players.length === 0) {
             roomRegistry.deleteRoom(nextRoom.roomCode);
+            inactiveTurns.clear(nextRoom.roomCode);
+            logRoomEvent('room_cleaned_up', nextRoom, payload.playerId, 'empty-lobby');
           } else {
-            emitRoom(roomRegistry.saveRoom(nextRoom));
+            const savedRoom = roomRegistry.saveRoom(nextRoom);
+            logRoomEvent('player_left', savedRoom, payload.playerId);
+            inactiveTurns.schedule(savedRoom);
+            emitRoom(savedRoom);
           }
         } else {
           const disconnectedRoom = roomRegistry.markPlayerConnection(room, payload.playerId, false);
-          emitRoom(roomRegistry.saveRoom(transferHostAfterPermanentLeave(disconnectedRoom, payload.playerId)));
+          const savedRoom = roomRegistry.saveRoom(transferHostAfterPermanentLeave(disconnectedRoom, payload.playerId));
+          logRoomEvent('player_left', savedRoom, payload.playerId);
+          inactiveTurns.schedule(savedRoom);
+          emitRoom(savedRoom);
         }
 
         ack({ ok: true, data: { roomCode: room.roomCode, playerId: payload.playerId } });
@@ -238,7 +283,9 @@ export function createApp(clientOrigin: string, options: CreateAppOptions = {}):
           throw new Error('All joined players must be ready before the game can start.');
         }
 
-        return startGame(room);
+        const nextRoom = startGame(room);
+        logRoomEvent('game_started', nextRoom, payload.playerId);
+        return nextRoom;
       });
     });
 
@@ -289,9 +336,17 @@ export function createApp(clientOrigin: string, options: CreateAppOptions = {}):
       }
 
       const updatedRoom = roomRegistry.markPlayerConnection(room, details.playerId, false);
+      logRoomEvent('player_disconnected', updatedRoom, details.playerId);
+      inactiveTurns.schedule(updatedRoom);
       emitRoom(updatedRoom);
     });
   });
+
+  const close = io.close.bind(io);
+  io.close = ((callback?: Parameters<typeof io.close>[0]) => {
+    inactiveTurns.clearAll();
+    return close(callback);
+  }) as typeof io.close;
 
   return { server, io, rooms };
 }
