@@ -32,6 +32,9 @@
 - Add deployment/runtime documentation for hosting the client and Socket.IO server together
 - Add host-transfer behavior so a permanent host leave gives host controls to the next connected seated player
 - Add an in-client deployment/runtime configuration checklist showing the Socket.IO server URL, health endpoint, and pre-invite verification reminder
+- Add structured server room lifecycle logs for create, join/sync, leave/disconnect, start, finish, inactive-turn skip, and cleanup events
+- Add configurable disconnected-turn skipping so inactive current players do not block active games when another connected active player is available
+- Document the MVP freeze state, runtime logging, and inactive-turn timeout configuration
 
 ## Post-MVP ideas
 
@@ -42,7 +45,6 @@ These items are intentionally parked beyond the current MVP scope so they can be
 - Add a single-player mode with language-model-backed opponents for solo practice and offline-friendly play flows.
 - Add player chat so people in the same room can coordinate and socialize during lobby setup and gameplay.
 
-## Next priorities
+## MVP freeze
 
-1. Add basic server observability beyond `/health`, such as structured room lifecycle logs for create, join, leave, start, finish, and cleanup events.
-2. Consider inactive-turn handling so long-disconnected players do not block active games indefinitely.
+The MVP multiplayer loop is frozen as of this pass. Future work should be handled under the post-MVP ideas list unless it fixes defects, improves operations, or addresses production readiness issues discovered while running the current feature set.

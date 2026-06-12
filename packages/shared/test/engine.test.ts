@@ -12,6 +12,7 @@ import {
   playCard,
   removePlayerFromRoom,
   resetFinishedGameToLobby,
+  skipDisconnectedTurn,
   startGame,
   toRoomView,
   transferHostAfterPermanentLeave,
@@ -112,6 +113,39 @@ describe('shared game engine', () => {
     expect(lobby.game).toBeNull();
     expect(lobby.players.every((player) => !player.ready)).toBe(true);
     expect(lobby.players.every((player) => player.hand.length === 0 && player.table.faceUp.length === 0 && player.table.faceDown.length === 0)).toBe(true);
+  });
+
+  it('skips a disconnected current player to the next connected active player', () => {
+    let room = createLobby(['Ada', 'Bea', 'Cal']);
+    room = startGame(room, {
+      deck: deckFromSpecs([
+        [9, suits[0]], [9, suits[1]], [9, suits[2]], [8, suits[0]], [8, suits[1]], [8, suits[2]], [7, suits[0]], [7, suits[1]], [7, suits[2]],
+        [11, suits[0]], [11, suits[1]], [11, suits[2]], [12, suits[0]], [12, suits[1]], [12, suits[2]], [13, suits[0]], [13, suits[1]], [13, suits[2]],
+        [3, suits[0]], [4, suits[0]], [5, suits[0]], [6, suits[0]], [10, suits[0]], [14, suits[0]], [2, suits[0]], [3, suits[1]], [4, suits[1]]
+      ])
+    });
+    const skippedPlayerId = room.game!.currentTurnPlayerId;
+    room.players.find((player) => player.playerId === skippedPlayerId)!.connected = false;
+
+    const skipped = skipDisconnectedTurn(room, skippedPlayerId);
+
+    expect(skipped.game?.currentTurnPlayerId).not.toBe(skippedPlayerId);
+    expect(skipped.players.find((player) => player.playerId === skipped.game?.currentTurnPlayerId)?.connected).toBe(true);
+    expect(skipped.game?.turn.playerId).toBe(skipped.game?.currentTurnPlayerId);
+  });
+
+  it('does not skip a disconnected player when no connected active player is available', () => {
+    let room = createLobby(['Ada', 'Bea']);
+    room = startGame(room, {
+      deck: deckFromSpecs([
+        [9, suits[0]], [9, suits[1]], [8, suits[0]], [8, suits[1]], [7, suits[0]], [7, suits[1]],
+        [11, suits[0]], [11, suits[1]], [12, suits[0]], [12, suits[1]], [13, suits[0]], [13, suits[1]],
+        [3, suits[0]], [4, suits[0]], [14, suits[0]], [5, suits[0]], [6, suits[0]], [10, suits[0]]
+      ])
+    });
+    room.players.forEach((player) => { player.connected = false; });
+
+    expect(() => skipDisconnectedTurn(room, room.game!.currentTurnPlayerId)).toThrow(/No connected player/i);
   });
 
   it('selects the starting player by the lowest hand card', () => {

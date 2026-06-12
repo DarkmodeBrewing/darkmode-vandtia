@@ -16,7 +16,7 @@ The current engine rule reference lives in `docs/rules.md`.
 - player-card source, selection, sorting, and out-state helpers in `player-cards.ts` so the rules engine can focus on room and turn transitions
 - room, player, game, and view types
 - turn and legality checks for card plays
-- state transitions for start game, card plays, chance draw, pile pickup, replay logging, and win detection
+- state transitions for start game, card plays, chance draw, pile pickup, disconnected-turn skips, replay logging, and win detection
 - player-safe room view generation for the UI, including host markers
 
 ### Server package
@@ -34,11 +34,11 @@ The current engine rule reference lives in `docs/rules.md`.
 - `game:pickup-pile`
 - `game:new-round`
 
-The server logic lives in `packages/server/src/app.ts` as a `createApp` factory that returns the Express server, Socket.IO instance, and the room map loaded from persistent storage. `index.ts` only reads environment variables and calls `createApp`. This split lets tests spin up isolated server instances without touching the real entry point. Room persistence, room-code/seat allocation, connection marking, room removal, and socket/player lookup details are contained in `room-registry.ts` so Socket.IO handlers stay focused on event validation and game mutations.
+The server logic lives in `packages/server/src/app.ts` as a `createApp` factory that returns the Express server, Socket.IO instance, and the room map loaded from persistent storage. `index.ts` only reads environment variables and calls `createApp`. This split lets tests spin up isolated server instances without touching the real entry point. Room persistence, room-code/seat allocation, connection marking, room removal, and socket/player lookup details are contained in `room-registry.ts` so Socket.IO handlers stay focused on event validation and game mutations. Lifecycle log formatting lives in `observability.ts`, and disconnected-turn timer orchestration lives in `inactive-turns.ts`, keeping those concerns out of the main app factory.
 
 The server stores room snapshots in `packages/server/data/rooms.json` by default, resets persisted players to disconnected on startup, tracks player/socket connections, and pushes room updates to each player with hidden information masked where needed. Players can explicitly leave rooms: lobby players are removed and their seats become available for later joiners, while players who leave after a game starts stay seated and are marked disconnected so the active game state is not corrupted. If the leaving player is the current host, host status transfers to the next connected seated player so host-only controls remain available. After a game finishes, the host can reset the same room back to the lobby for another ready-up and deal without sharing a new room code. Deployment guidance in `docs/deployment.md` covers the production split between static client assets and the Socket.IO server, including reverse-proxy routing for `/socket.io/` and `/health`.
 Persistence retention now keeps in-progress rooms for recovery, keeps lobby rooms only while at least one player remains connected, and prunes finished rooms plus fully disconnected lobbies.
-In-progress rooms can be pruned automatically by age when the `ROOM_MAX_IN_PROGRESS_AGE_HOURS` environment variable is set. See `docs/operator.md` for the full configuration reference.
+In-progress rooms can be pruned automatically by age when the `ROOM_MAX_IN_PROGRESS_AGE_HOURS` environment variable is set. The production entry point also enables disconnected-turn skipping with `INACTIVE_TURN_TIMEOUT_SECONDS` (default `120`) so a disconnected current player cannot block a game indefinitely while another active player is connected. Room lifecycle events are emitted as structured JSON logs for create, join, sync, leave/disconnect, start, finish, timeout skip, and cleanup events. See `docs/operator.md` for the full configuration reference.
 
 ### Client package
 
@@ -68,7 +68,8 @@ In-progress rooms can be pruned automatically by age when the `ROOM_MAX_IN_PROGR
 8. Players must exhaust sources in order: hand, then face-up, then face-down; face-down cards are hidden from their owner until selected, then revealed and either played or picked up with the pile if illegal.
 9. Each card play, burn, chance draw, pile pickup, and illegal face-down reveal penalty is recorded in the round replay log.
 10. The game ends when a player clears hand, face-up, and face-down cards, and the client shows the completed replay sequence behind a collapsible detail panel that can filter by action type.
-11. The current host can set up the next round from the finished state, returning everyone to the lobby with empty cards and fresh ready checks while keeping the same room code.
+11. If the current-turn player disconnects, the server waits for the configured inactive-turn grace period and then skips that turn to the next connected active player when one is available.
+12. The current host can set up the next round from the finished state, returning everyone to the lobby with empty cards and fresh ready checks while keeping the same room code.
 
 ## Test coverage
 
@@ -86,10 +87,11 @@ Current automated tests cover:
 - replay entries for plays, burns, chance draws, pickups, and illegal face-down reveal penalties
 - winner detection
 - finished-game reset back to the lobby for another round
+- disconnected current-player turn skips and the guard that prevents a skip when no connected active player is available
 
 **Server** (`packages/server/test`):
 
-- `server.test.ts` — covers all Socket.IO events (create, join, sync, leave, toggle-ready, start, new-round, play-card, draw-chance, pickup-pile), lobby leave/reseat behavior, host-only game starts, host transfer after permanent leave, illegal face-down reveal penalties, disconnect handling, and persisted room reload with session recovery
+- `server.test.ts` — covers all Socket.IO events (create, join, sync, leave, toggle-ready, start, new-round, play-card, draw-chance, pickup-pile), lobby leave/reseat behavior, host-only game starts, host transfer after permanent leave, illegal face-down reveal penalties, disconnect handling, inactive-turn timeout skips, structured lifecycle logs, and persisted room reload with session recovery
 - `storage.test.ts` — covers age-based retention: recent rooms are kept, rooms past the threshold are pruned on save and on load, and rooms are kept indefinitely when no limit is configured
 
 **Client tests** (`packages/client/test`):
@@ -98,7 +100,6 @@ Current automated tests cover:
 - `status.test.ts` — covers offline and restoring recovery messaging, host-aware lobby readiness guidance, waiting-turn summaries, source-specific turn guidance, forced chance-draw guidance, and winner summaries
 - `app.test.tsx` — renders landing and lobby views in jsdom, verifies mobile-first layout containers (`.app-shell`, `.landing-grid`, `.seat-grid`) are present, checks that action buttons are disabled when inputs are empty, confirms connection state and ready-count pills update correctly after socket events, verifies non-host players see host-only start guidance, verifies hidden face-down card choices emit their preserved card ids, confirms the Leave room button sends `room:leave`, checks completed-round replay drawer/filter behavior, and verifies the host next-round setup action
 
-## Known gaps
+## MVP freeze note
 
-- There is no inactive-turn timeout or skip flow yet if a disconnected player blocks an active game indefinitely.
-- Runtime observability is still limited to `/health` plus host/platform logs.
+The outstanding MVP items from the prior status pass are now closed: disconnected current players no longer block games indefinitely, and runtime observability now includes structured room lifecycle logs in addition to `/health`. Remaining ideas should be treated as post-MVP unless they are bug fixes or operational hotfixes.

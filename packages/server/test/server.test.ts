@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { io as connectSocket, type Socket } from 'socket.io-client';
 import { createCard } from '@darkmode-vandtia/shared';
 import { createApp, type AppInstance } from '../src/app';
+import type { RoomLifecycleLogEntry } from '../src/observability';
 
 type AckResponse<T> = { ok: true; data: T } | { ok: false; error: string };
 
@@ -45,11 +46,13 @@ describe('server socket events', () => {
   let socketB: Socket;
   let tempDirectory: string;
   let roomStoragePath: string;
+  let logs: RoomLifecycleLogEntry[];
 
   beforeEach(async () => {
     tempDirectory = mkdtempSync(join(tmpdir(), 'darkmode-vandtia-server-'));
     roomStoragePath = join(tempDirectory, 'rooms.json');
-    app = createApp('http://localhost:5173', { roomStoragePath });
+    logs = [];
+    app = createApp('http://localhost:5173', { roomStoragePath, logger: { log: (entry) => logs.push(entry) } });
     await new Promise<void>((resolve) => app.server.listen(0, resolve));
     socketA = await connect(getPort(app));
     socketB = await connect(getPort(app));
@@ -644,6 +647,64 @@ describe('server socket events', () => {
     });
   });
 
+  describe('inactive turn timeout', () => {
+
+    it('skips a disconnected current player after the inactive-turn timeout', async () => {
+      await new Promise<void>((resolve) => app.io.close(() => resolve()));
+      await new Promise<void>((resolve) => app.server.close(() => resolve()));
+      app = createApp('http://localhost:5173', {
+        roomStoragePath,
+        inactiveTurnTimeoutMs: 20,
+        logger: { log: (entry) => logs.push(entry) }
+      });
+      await new Promise<void>((resolve) => app.server.listen(0, resolve));
+      socketA = await connect(getPort(app));
+      socketB = await connect(getPort(app));
+
+      const { roomCode, playerAId, playerBId } = await startTwoPlayerGame();
+      const room = app.rooms.get(roomCode)!;
+      const currentPlayerId = room.game!.currentTurnPlayerId;
+      const currentSocket = currentPlayerId === playerAId ? socketA : socketB;
+      const nextPlayerId = currentPlayerId === playerAId ? playerBId : playerAId;
+
+      currentSocket.disconnect();
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      expect(app.rooms.get(roomCode)?.game?.currentTurnPlayerId).toBe(nextPlayerId);
+      expect(logs.find((entry) => entry.event === 'inactive_turn_skipped')).toMatchObject({ roomCode, playerId: currentPlayerId });
+    });
+
+  });
+
+  describe('observability', () => {
+
+    it('records structured lifecycle logs for create, join, start, finish, and cleanup', async () => {
+      const { roomCode, playerAId } = await startTwoPlayerGame();
+      const room = app.rooms.get(roomCode)!;
+      const currentPlayerId = room.game!.currentTurnPlayerId;
+      const currentSocket = currentPlayerId === playerAId ? socketA : socketB;
+      const currentPlayer = room.players.find((player) => player.playerId === currentPlayerId)!;
+
+      currentPlayer.hand = [currentPlayer.hand[0]!];
+      currentPlayer.table.faceUp = [];
+      currentPlayer.table.faceDown = [];
+      room.game!.drawPile = [];
+      app.rooms.set(roomCode, room);
+
+      const finished = await emit<PlayerData>(currentSocket, 'game:play-card', {
+        roomCode,
+        playerId: currentPlayerId,
+        cardId: currentPlayer.hand[0]!.id
+      });
+      expect(finished.ok).toBe(true);
+
+      const events = logs.map((entry) => entry.event);
+      expect(events).toEqual(expect.arrayContaining(['room_created', 'player_joined', 'game_started', 'game_finished']));
+      expect(logs.find((entry) => entry.event === 'game_finished')).toMatchObject({ roomCode, status: 'finished', winnerPlayerId: currentPlayerId });
+    });
+
+  });
+
   describe('room persistence', () => {
     it('drops disconnected lobby rooms from persisted storage before restart', async () => {
       const created = await emit<SessionData>(socketA, 'room:create', { playerName: 'Ada' });
@@ -656,7 +717,7 @@ describe('server socket events', () => {
       await new Promise<void>((resolve) => app.io.close(() => resolve()));
       await new Promise<void>((resolve) => app.server.close(() => resolve()));
 
-      app = createApp('http://localhost:5173', { roomStoragePath });
+      app = createApp('http://localhost:5173', { roomStoragePath, logger: { log: (entry) => logs.push(entry) } });
       await new Promise<void>((resolve) => app.server.listen(0, resolve));
       socketA = await connect(getPort(app));
       socketB = await connect(getPort(app));
@@ -694,7 +755,7 @@ describe('server socket events', () => {
       await new Promise<void>((resolve) => app.io.close(() => resolve()));
       await new Promise<void>((resolve) => app.server.close(() => resolve()));
 
-      app = createApp('http://localhost:5173', { roomStoragePath });
+      app = createApp('http://localhost:5173', { roomStoragePath, logger: { log: (entry) => logs.push(entry) } });
       await new Promise<void>((resolve) => app.server.listen(0, resolve));
       socketA = await connect(getPort(app));
       socketB = await connect(getPort(app));

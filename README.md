@@ -18,6 +18,8 @@ A multiplayer Vändtia prototype built as a TypeScript workspace with a shared r
 - Restore a saved player session into an existing room and clear stale local session state when needed
 - Persist room state on the server so rooms and saved sessions can survive a server restart
 - Apply persisted-room cleanup rules that prune finished rooms and fully disconnected lobbies while keeping in-progress rooms recoverable
+- Emit structured server lifecycle logs for room creation, joins, reconnects, leaves, disconnects, starts, finishes, inactive-turn skips, and cleanup
+- Skip a disconnected current player after the configured inactive-turn timeout when another connected active player can receive the turn
 - Track seat assignments, ready state, and connection status
 - Start a game once all joined players are ready
 - Play hand, face-up, and face-down cards using shared Vändtia rules
@@ -40,7 +42,7 @@ Run from the repository root:
 The server defaults to `http://localhost:3001` and the client defaults to `http://localhost:5173`.
 The development client connects to `VITE_SERVER_URL` when that environment variable is set, otherwise it uses `http://localhost:3001`.
 The server persists rooms to `packages/server/data/rooms.json` by default and can override that path with `ROOM_STORAGE_PATH`.
-Persistence keeps in-progress games for recovery, keeps lobby rooms only while at least one player is connected, and removes finished rooms.
+Persistence keeps in-progress games for recovery, keeps lobby rooms only while at least one player is connected, and removes finished rooms. `INACTIVE_TURN_TIMEOUT_SECONDS` controls the disconnected-turn skip grace period and defaults to 120 seconds in the production server entry point.
 
 ## Workspace scripts
 
